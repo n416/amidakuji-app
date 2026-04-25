@@ -1,92 +1,95 @@
-import React, { useState } from 'react';
-import { Home, Plus, HelpCircle, ChevronDown, User, Settings, Trophy, Users } from 'lucide-react';
+import React, { useEffect } from 'react';
 
 export const Header: React.FC = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [groupDropdownOpen, setGroupDropdownOpen] = useState(false);
-
-  // ログイン状態や現在グループなどのステートは後続フェーズで Context/Zustand に移行します
-  const isLoggedIn = false; 
+  useEffect(() => {
+    if ((window as any).lucide) {
+      (window as any).lucide.createIcons();
+    }
+  }, []);
 
   return (
     <div id="header-container">
-      {/* 既存のインパーソネーションバナー（必要に応じて表示） */}
-      <div className="impersonation-banner" style={{ display: 'none', backgroundColor: '#ffeeb0', padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#333', zIndex: 1000, position: 'relative' }}>
+      <div className="impersonation-banner" style={{display: 'none', backgroundColor: '#ffeeb0', padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#333', zIndex: '1000', position: 'relative'}}>
         <span id="impersonationBannerText">現在、別のユーザーとして操作中です。</span>
-        <button id="stopImpersonatingButton" className="button-secondary" style={{ marginLeft: '10px', padding: '5px 10px', fontSize: '0.9em', cursor: 'pointer' }}>元の管理者に戻る</button>
+        <button id="stopImpersonatingButton" className="button-secondary" style={{marginLeft: '10px', padding: '5px 10px', fontSize: '0.9em', cursor: 'pointer'}}>元の管理者に戻る</button>
       </div>
-
       <header className="main-header">
         <h1>ダイナミックあみだくじ</h1>
-        
-        <button 
-          id="hamburger-button" 
-          aria-label="メニューを開く" 
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
+        <button id="hamburger-button" aria-label="メニューを開く" aria-controls="nav-menu" aria-expanded="false">
           <span></span>
           <span></span>
           <span></span>
         </button>
+        <div id="nav-menu">
+          
+          <a href="/" className="button header-icon-button" id="homeButton" title="ホーム"><i data-lucide="home"></i><span>ホーム</span></a>
 
-        <div id="nav-menu" className={menuOpen ? 'open' : ''}>
-          <a href="/" className="button header-icon-button" title="ホーム">
-            <Home size={18} />
-            <span>ホーム</span>
-          </a>
+          <div className="group-switcher-container" style={{display: 'none'}}>
+            <label className="group-switcher-label">グループ選択</label>
+            <div id="groupSwitcher">
+              <button id="currentGroupName"></button>
+              <div id="groupDropdown" className="dropdown-content">
+                <ul id="switcherGroupList"></ul>
 
-          {isLoggedIn && (
-            <div className="group-switcher-container">
-              <label className="group-switcher-label">グループ選択</label>
-              <div id="groupSwitcher" onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}>
-                <button id="currentGroupName">マングループ</button>
-                {groupDropdownOpen && (
-                  <div className="dropdown-content" style={{ display: 'block' }}>
-                    <ul id="switcherGroupList">
-                      <li>グループA</li>
-                    </ul>
-                    <button id="switcherCreateGroup"><Plus size={16} /> 新規グループを作成</button>
-                  </div>
-                )}
+                <button id="switcherCreateGroup"><i data-lucide="plus"></i> 新規グループを作成</button>
               </div>
             </div>
-          )}
+          </div>
 
-          <div className="header-dropdown" id="tutorialMenuContainer">
+          <div className="header-dropdown" id="tutorialMenuContainer" style={{display: 'none'}}>
             <button className="button header-icon-button" id="tutorialMenuButton">
-              <HelpCircle size={18} />
+              <i data-lucide="help-circle"></i>
               <span>チュートリアル</span>
-              <ChevronDown size={16} className="dropdown-arrow" />
+              <i data-lucide="chevron-down" className="dropdown-arrow"></i>
+
+              <span className="notification-dot" style={{display: 'none'}}></span>
             </button>
+            <div className="dropdown-content">
+              <ul id="tutorialDropdownList" className="item-list"></ul>
+              <a href="/tutorials" className="dropdown-item-link" id="viewAllTutorialsLink">すべて表示</a>
+            </div>
           </div>
 
           <div className="header-dropdown" id="userMenuContainer">
-            <button 
-              className="button header-icon-button" 
-              onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-            >
-              <User size={18} />
-              <span>ユーザー</span>
-              <ChevronDown size={16} className="dropdown-arrow" />
-            </button>
-            {userDropdownOpen && (
-              <div className="dropdown-content" style={{ display: 'block' }}>
-                <ul>
-                  <li><button id="adminDashboardButton">システム管理</button></li>
-                  <li><button id="logoutButton">ログアウト</button></li>
-                  <li><button id="deleteAccountButton" className="delete-btn">アカウント削除</button></li>
-                </ul>
-              </div>
-            )}
-          </div>
+            <button className="button header-icon-button" id="userMenuButton">
+              <i data-lucide="user"></i>
 
-          {!isLoggedIn && (
-            <div className="auth-controls">
-              <button id="loginButton">運営者ログイン</button>
+              <span>ユーザー</span>
+              <i data-lucide="chevron-down" className="dropdown-arrow"></i>
+            </button>
+            <div className="dropdown-content">
+              <ul>
+                
+                <li><button id="adminDashboardButton">システム管理</button></li>
+                
+
+                <li><button id="logoutButton">ログアウト</button></li>
+                <li><button id="deleteAccountButton" className="delete-btn">アカウント削除</button></li>
+              </ul>
             </div>
-          )}
+          </div>
+          <div className="auth-controls">
+            <button id="loginButton">運営者ログイン</button>
+          </div>
+        </div>
+      </header>
+      <header className="participant-header" id="participantHeader" style={{display: 'none'}}>
+        <div className="header-content-wrapper">
+          <div id="participant-header-logged-out" style={{display: 'none'}}>
+            <div className="participant-header-actions">
+              <button id="participantDashboardButtonLoggedOut">ダッシュボード</button>
+              <button id="participantLoginButton" className="primary-action">参加者ログイン</button>
+            </div>
+          </div>
+          <div id="participant-header-logged-in" style={{display: 'none'}}>
+            
+            <div id="participantWelcomeMessage">ようこそ、〇〇さん</div>
+            <div className="participant-header-actions">
+              <button id="participantDashboardButton">ダッシュボード</button>
+              <button id="participantProfileButton">プロフィール</button>
+              <button id="headerParticipantLogoutButton" className="secondary-btn">ログアウト</button>
+            </div>
+          </div>
         </div>
       </header>
     </div>

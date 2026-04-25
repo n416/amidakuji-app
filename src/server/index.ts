@@ -85,6 +85,11 @@ app.get('*', async (c) => {
     return c.json({ error: 'Not Found' }, 404);
   }
   
+  // Vite開発サーバーなど、ASSETSバインディングがない環境ではそのまま404を返す
+  if (!c.env || !c.env.ASSETS) {
+    return c.json({ error: 'Not Found' }, 404);
+  }
+  
   const url = new URL(c.req.url);
   url.pathname = '/';
   
