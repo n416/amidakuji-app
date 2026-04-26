@@ -1,8 +1,9 @@
-import {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator, setAnimatorState} from './animation/core.js';
-import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes, wrapText, showAllTracersInstantly} from './animation/drawing.js';
-import {calculatePath, getVirtualWidth, getTargetHeight, calculatePrizeAreaHeight, getNameAreaHeight, calculateClientSideResults} from './animation/path.js';
-import {prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, handleResize, adminPanzoom, participantPanzoom} from './animation/setup.js';
-import {Particle, createSparks, celebrate} from './animation/effects.js';
+﻿// @ts-nocheck
+import {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator, setAnimatorState} from './animation/core';
+import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes, wrapText, showAllTracersInstantly} from './animation/drawing';
+import {calculatePath, getVirtualWidth, getTargetHeight, calculatePrizeAreaHeight, getNameAreaHeight, calculateClientSideResults} from './animation/path';
+import {prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, handleResize, adminPanzoom, participantPanzoom} from './animation/setup';
+import {Particle, createSparks, celebrate} from './animation/effects';
 
 let prizeFadeAnimationId;
 let currentPrizeAlpha = 0;
@@ -99,3 +100,5 @@ export function fadePrizes(targetCtx, show) {
 }
 
 export {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, prepareStepAnimation, showAllTracersInstantly, adminPanzoom, participantPanzoom, setAnimatorState};
+
+

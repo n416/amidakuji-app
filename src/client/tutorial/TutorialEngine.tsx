@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { tutorials, TutorialStory, TutorialStep } from './tutorialData';
+import { CustomConfirmModal } from '../components/CustomConfirmModal';
 
 const CHECK_INTERVAL = 100;
 const MAX_WAIT_TIME = 5000;
@@ -50,6 +51,7 @@ export const TutorialEngine: React.FC = () => {
   const [dialogStyle, setDialogStyle] = useState<React.CSSProperties>({ display: 'none' });
   const [showNextButton, setShowNextButton] = useState(false);
   const [nextButtonText, setNextButtonText] = useState('次へ');
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{message: string, options: string[], callback: (opt: string | null) => void} | null>(null);
 
   // Refs to control flow
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -110,8 +112,13 @@ export const TutorialEngine: React.FC = () => {
     }, 3000);
   };
 
-  const showCustomConfirm = async (msg: string): Promise<boolean> => {
-    return window.confirm(msg);
+  const showCustomConfirm = (msg: string, options: string[]): Promise<string | null> => {
+    return new Promise((resolve) => {
+      setConfirmModalConfig({ message: msg, options, callback: (opt) => {
+        setConfirmModalConfig(null);
+        resolve(opt);
+      }});
+    });
   };
 
   const markTutorialAsCompleted = (storyId: string) => {
@@ -256,11 +263,7 @@ export const TutorialEngine: React.FC = () => {
             }
           }, 50);
 
-          let originalAlert = window.alert;
-          let alertTriggered = false;
-
           cleanupListenersRef.current = () => {
-            window.alert = originalAlert;
             signal.removeEventListener('abort', onAbort);
           };
 
@@ -273,10 +276,10 @@ export const TutorialEngine: React.FC = () => {
           };
           skipAllActionRef.current = async () => {
             setIsVisible(false);
-            const c1 = await showCustomConfirm('本当にすべてのチュートリアルを完了済みにしますか？');
-            if (!c1) { setIsVisible(true); return; }
-            const c2 = await showCustomConfirm('この操作は元に戻せません。本当によろしいですか？');
-            if (!c2) { setIsVisible(true); return; }
+            const c1 = await showCustomConfirm('本当にすべてのチュートリアルを完了済みにしますか？', ['はい']);
+            if (c1 !== 'はい') { setIsVisible(true); return; }
+            const c2 = await showCustomConfirm('この操作は元に戻せません。本当によろしいですか？', ['はい']);
+            if (c2 !== 'はい') { setIsVisible(true); return; }
             
             tutorials.forEach(t => markTutorialAsCompleted(t.id));
             showToast('すべてのチュートリアルを完了済みにしました。');
@@ -286,16 +289,8 @@ export const TutorialEngine: React.FC = () => {
 
           if (subStep.waitForClickOn) {
             const clickTarget = document.querySelector(subStep.waitForClickOn);
-            window.alert = (msg) => { alertTriggered = true; originalAlert(msg); };
             const clickHandler = () => {
-              window.alert = originalAlert;
-              if (alertTriggered) {
-                originalAlert('チュートリアルを続行できませんでした。最初のステップからやり直します。');
-                resolve(closeDialog({ok: false}));
-                // Realistically we should restart, but aborting is safer in React
-              } else {
-                resolve(closeDialog({ok: true}));
-              }
+              resolve(closeDialog({ok: true}));
             };
             if (clickTarget) {
               clickTarget.addEventListener('click', clickHandler, { once: true });
@@ -464,6 +459,13 @@ export const TutorialEngine: React.FC = () => {
           </div>
         </div>
       </div>
+      {confirmModalConfig && (
+        <CustomConfirmModal
+          message={confirmModalConfig.message}
+          options={confirmModalConfig.options}
+          onSelect={confirmModalConfig.callback}
+        />
+      )}
     </>
   );
 };

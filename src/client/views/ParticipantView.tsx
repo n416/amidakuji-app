@@ -6,14 +6,13 @@ import { RootState } from '../store';
 import { setParticipantSession, clearParticipantSession } from '../store/participantSlice';
 import { setCurrentGroupId, setCurrentLotteryData } from '../store/lotterySlice';
 import { ArrowLeft, PartyPopper, Hand, Pencil, Eraser, Gift, Lock, X } from 'lucide-react';
+import { useAmidaAnimation } from '../hooks/useAmidaAnimation';
 // @ts-ignore
-import { prepareStepAnimation, startAnimation, clearAnimationState, isAnimationRunning, setAnimatorState } from '../lib/animation.js';
+import { participantPanzoom, resetParticipantPanzoom } from '../lib/animation/setup';
 // @ts-ignore
-import { participantPanzoom, resetParticipantPanzoom } from '../lib/animation/setup.js';
+import { getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight, getTargetHeight } from '../lib/animation/path';
 // @ts-ignore
-import { getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight, getTargetHeight } from '../lib/animation/path.js';
-// @ts-ignore
-import { drawLotteryBase, drawDoodleHoverPreview, drawDoodlePreview } from '../lib/animation/drawing.js';
+import { drawLotteryBase, drawDoodleHoverPreview, drawDoodlePreview } from '../lib/animation/drawing';
 
 export const ParticipantView: React.FC = () => {
   const { eventId, customUrl, participantName } = useParams();
@@ -75,6 +74,8 @@ export const ParticipantView: React.FC = () => {
 
   const actualEventId = eventId;
   const isShare = !!participantName;
+
+  const { prepareStep, start, isRunning, clear, setAnimatorState } = useAmidaAnimation({ lotteryData: eventData });
 
   useEffect(() => {
     const init = async () => {
@@ -141,7 +142,7 @@ export const ParticipantView: React.FC = () => {
                   if (staticCanvasRef.current) {
                     const ctx = staticCanvasRef.current.getContext('2d');
                     const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
-                    prepareStepAnimation(ctx, true, false, false, storedState);
+                    prepareStep(staticCanvasRef, true, false, false, storedState);
                   }
                 }
                 
@@ -178,7 +179,7 @@ export const ParticipantView: React.FC = () => {
         const ctx = staticCanvasRef.current.getContext('2d');
         if (ctx) {
           const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
-          prepareStepAnimation(ctx, true, false, false, storedState).then(() => {
+          prepareStep(staticCanvasRef, true, false, false, storedState).then(() => {
             if (participantPanzoom) {
               participantPanzoom.setOptions({
                 disablePan: doodleTool !== 'pan',
@@ -262,16 +263,16 @@ export const ParticipantView: React.FC = () => {
             };
 
             // 前回のアニメーション状態（他の画面からの残存トレーサー）をクリアしてから開始
-            clearAnimationState();
-            startAnimation(ctx, targetName ? [targetName] : null, onAnimationComplete, targetName);
+            clear();
+            start(resultCanvasRef, targetName ? [targetName] : [], onAnimationComplete, targetName);
           } else {
             // アニメーション実行中は再描画しない（animator.tracers を上書きしてしまうため）
-            if (isAnimationRunning()) return;
+            if (isRunning()) return;
 
             const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
             // showAllTracers が false の場合、自分の軌跡のみ表示する（他人の軌跡はボタン押下後に表示）
             const onlyName = showAllTracers ? null : targetName;
-            prepareStepAnimation(ctx, false, true, true, storedState, true, onlyName).then(() => {
+            prepareStep(resultCanvasRef, false, true, true, storedState, true, onlyName).then(() => {
               if (participantPanzoom) {
                 participantPanzoom.setOptions({ disablePan: false, disableZoom: false });
                 const wrapper = document.getElementById('participant-panzoom-wrapper');

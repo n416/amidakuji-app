@@ -1,8 +1,9 @@
+// @ts-nocheck
 // amidakuji-app/public/js/animation/core.js
-import {calculateAllPaths, getTargetHeight, getVirtualWidth, calculateClientSideResults} from './path.js';
-import {drawLotteryBase, drawRevealedPrizes, drawTracerPath, drawTracerIcon} from './drawing.js';
-import {initializePanzoom, preloadIcons, preloadPrizeImages, adminPanzoom, participantPanzoom} from './setup.js';
-import {createSparks, celebrate, Particle} from './effects.js';
+import {calculateAllPaths, getTargetHeight, getVirtualWidth, calculateClientSideResults} from './path';
+import {drawLotteryBase, drawRevealedPrizes, drawTracerPath, drawTracerIcon} from './drawing';
+import {initializePanzoom, preloadIcons, preloadPrizeImages, adminPanzoom, participantPanzoom} from './setup';
+import {createSparks, celebrate, Particle} from './effects';
 
 export const animator = {
   tracers: [],
@@ -267,7 +268,7 @@ function animationLoop() {
   animationFrameId = requestAnimationFrame(animationLoop);
 }
 
-export async function startAnimation(targetCtx, userNames = [], onComplete = null, panToName = null) {
+export async function startAnimation(targetCtx: any, userNames: any = [], onComplete: any = null, panToName: any = null) {
   console.log('[Animation] startAnimation called with userNames:', userNames);
   if (!targetCtx || !animator.lotteryData) {
     console.error('[Animation] Start failed: No context or lottery data.');
@@ -339,7 +340,7 @@ export async function startAnimation(targetCtx, userNames = [], onComplete = nul
   animationLoop();
 }
 
-export function advanceLineByLine(onComplete = null) {
+export function advanceLineByLine(onComplete: any = null) {
   if (animator.tracers.length === 0 || animator.running) return;
 
   // ▼▼▼ このリセット条件の判定を修正します ▼▼▼
@@ -397,7 +398,7 @@ export function advanceLineByLine(onComplete = null) {
   }
 }
 
-export async function resetAnimation(onComplete = null) {
+export async function resetAnimation(onComplete: any = null) {
   if (isAnimationRunning()) return;
   animator.onComplete = onComplete;
   updateRevealedPrizes([]);
@@ -428,3 +429,5 @@ export async function resetAnimation(onComplete = null) {
   animator.running = true;
   animationLoop();
 }
+
+

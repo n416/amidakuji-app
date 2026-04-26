@@ -5,8 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { setCurrentLotteryData, setPrizes as setReduxPrizes } from '../store/lotterySlice';
 import { setCurrentGroupPrizeMasters } from '../store/adminSlice';
-// @ts-ignore
-import { prepareStepAnimation, setAnimatorState } from '../lib/animation.js';
+import { useAmidaAnimation } from '../hooks/useAmidaAnimation';
 import { X, Users, RefreshCw, Gift, ArrowLeft, Plus, Star, Trash2, ArrowRight, ImagePlus, Grid, List } from 'lucide-react';
 import { CustomConfirmModal } from '../components/CustomConfirmModal';
 import { ImageCropperModal } from '../components/ImageCropperModal';
@@ -62,6 +61,8 @@ export const EventEditView: React.FC = () => {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
+  const { prepareStep } = useAmidaAnimation({ lotteryData: eventData });
+
   useEffect(() => {
     const init = async () => {
       if (!isNewEvent) {
@@ -74,7 +75,6 @@ export const EventEditView: React.FC = () => {
           setDisplayPrizeCount(data.displayPrizeCount ?? true);
           setAllowDoodleMode(data.allowDoodleMode || false);
           dispatch(setCurrentLotteryData(data));
-          setAnimatorState({ lotteryData: data });
           dispatch(setReduxPrizes(data.prizes || []));
         } catch (e) {
           console.error(e);
@@ -90,8 +90,7 @@ export const EventEditView: React.FC = () => {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
         dispatch(setCurrentLotteryData(eventData));
-        setAnimatorState({ lotteryData: eventData });
-        prepareStepAnimation(ctx, true, false, true);
+        prepareStep(canvasRef, true, false, true);
       }
     }
   }, [eventData, isNewEvent]);
@@ -311,8 +310,7 @@ export const EventEditView: React.FC = () => {
       setEventData(updatedEventData);
       dispatch(setCurrentLotteryData(updatedEventData));
       
-      const ctx = canvasRef.current?.getContext('2d');
-      if (ctx) prepareStepAnimation(ctx, true, false, true);
+      prepareStep(canvasRef, true, false, true);
       showToast('あみだくじを再生成しました。');
       
       const updated = await api.getEvent(currentEventId);

@@ -1,5 +1,6 @@
+﻿// @ts-nocheck
 // パーティクルや紙吹雪などの視覚効果に関するロジック
-import {animator} from './core.js';
+import {animator} from './core';
 
 export class Particle {
   constructor(x, y, color, type = 'trail') {
@@ -66,3 +67,5 @@ export function celebrate(originX, color) {
   confetti({particleCount: 100, spread: 70, origin: {x: x, y: 0.8}, colors: [color, '#ffffff']});
   // ▲▲▲ ここまで修正 ▲▲▲
 }
+
+

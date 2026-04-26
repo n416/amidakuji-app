@@ -3,10 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api';
 import { useDispatch } from 'react-redux';
 import { setCurrentEventId, setCurrentGroupId, setCurrentLotteryData } from '../store/lotterySlice';
-// @ts-ignore
-import { prepareStepAnimation, resetAnimation, advanceLineByLine, isAnimationRunning, startAnimation, fadePrizes, setAnimatorState } from '../lib/animation.js';
-// @ts-ignore
-import { resetAdminPanzoom } from '../lib/animation/setup.js';
+import { resetAdminPanzoom } from '../lib/animation/setup';
+import { useAmidaAnimation } from '../hooks/useAmidaAnimation';
 import { ArrowLeft, Maximize, SlidersHorizontal, X, PartyPopper } from 'lucide-react';
 
 export const BroadcastView: React.FC = () => {
@@ -46,7 +44,6 @@ export const BroadcastView: React.FC = () => {
         const data = await api.getEvent(eventId);
         setEventData(data);
         dispatch(setCurrentLotteryData(data));
-        setAnimatorState({ lotteryData: data });
         dispatch(setCurrentEventId(eventId));
         dispatch(setCurrentGroupId(data.groupId));
         
@@ -56,7 +53,6 @@ export const BroadcastView: React.FC = () => {
         } catch(e){}
         
         setRevealedPrizes([]);
-        setAnimatorState({ revealedPrizes: [] });
 
         setLoading(false);
       } catch (error) {
@@ -66,23 +62,20 @@ export const BroadcastView: React.FC = () => {
     fetchData();
   }, [eventId]);
 
+  const { prepareStep, start, stop, reset, advanceLine, isRunning, fadePrizes } = useAmidaAnimation({
+    lotteryData: eventData,
+    onRevealedPrizesChange: (prizes) => setRevealedPrizes([...prizes])
+  });
+
   useEffect(() => {
     if (!loading && canvasRef.current) {
       const isStarted = eventData?.status === 'started';
       const allParticipants = eventData?.participants.filter((p: any) => p.name) || [];
       const noParticipants = allParticipants.length === 0;
       const hide = (isStarted && noParticipants) ? false : true;
-      prepareStepAnimation(canvasRef.current.getContext('2d'), hide);
+      prepareStep(canvasRef, hide);
     }
-  }, [loading, isFullscreen, eventData?.status]);
-
-  useEffect(() => {
-    setAnimatorState({
-      setRevealedPrizesCallback: (prizes: any[]) => {
-        setRevealedPrizes([...prizes]);
-      }
-    });
-  }, []);
+  }, [loading, isFullscreen, eventData?.status, prepareStep]);
 
   useEffect(() => {
     return () => {
@@ -109,7 +102,6 @@ export const BroadcastView: React.FC = () => {
         const data = await api.getEvent(eventId);
         setEventData(data);
         dispatch(setCurrentLotteryData(data));
-        setAnimatorState({ lotteryData: data });
       } catch (e: any) {
         showToast(`エラー: ${e.error}`);
       }
@@ -154,11 +146,11 @@ export const BroadcastView: React.FC = () => {
               </button>
               <button 
                 id="glimpseButton" 
-                onMouseDown={() => { if(canvasRef.current) fadePrizes(canvasRef.current.getContext('2d'), true); }}
-                onMouseUp={() => { if(canvasRef.current) fadePrizes(canvasRef.current.getContext('2d'), false); }}
-                onMouseLeave={() => { if(canvasRef.current) fadePrizes(canvasRef.current.getContext('2d'), false); }}
-                onTouchStart={(e) => { e.preventDefault(); if(canvasRef.current) fadePrizes(canvasRef.current.getContext('2d'), true); }}
-                onTouchEnd={(e) => { e.preventDefault(); if(canvasRef.current) fadePrizes(canvasRef.current.getContext('2d'), false); }}
+                onMouseDown={() => fadePrizes(canvasRef, true)}
+                onMouseUp={() => fadePrizes(canvasRef, false)}
+                onMouseLeave={() => fadePrizes(canvasRef, false)}
+                onTouchStart={(e) => { e.preventDefault(); fadePrizes(canvasRef, true); }}
+                onTouchEnd={(e) => { e.preventDefault(); fadePrizes(canvasRef, false); }}
               >
                 景品チラ見せ
               </button>
@@ -208,15 +200,14 @@ export const BroadcastView: React.FC = () => {
                   setControlsDisabled(true);
                   // 全結果を再生する時は全て未公開状態に戻す
                   setRevealedPrizes([]);
-                  setAnimatorState({ revealedPrizes: [] });
-                  await resetAnimation(handleAnimationComplete);
+                  await reset(handleAnimationComplete);
                 }}
               >全結果を再生</button>
               <button 
                 disabled={controlsDisabled || noParticipants}
                 onClick={() => {
                   setControlsDisabled(true);
-                  advanceLineByLine(() => setControlsDisabled(false));
+                  advanceLine(() => setControlsDisabled(false));
                 }}
               >一段ずつ進む</button>
             </div>
@@ -232,40 +223,32 @@ export const BroadcastView: React.FC = () => {
               <button 
                 disabled={controlsDisabled || !highlightUser || noParticipants}
                 onClick={async () => {
-                  if (isAnimationRunning() || !highlightUser) return;
-                  const ctx = canvasRef.current?.getContext('2d');
-                  if (ctx) {
-                    console.log('[BroadcastView] Starting animation for highlighted user:', highlightUser);
-                    // 選択されたユーザーを revealedPrizes から除外し、再描画できるようにする
-                    const newRevealed = revealedPrizes.filter(p => p.participantName !== highlightUser);
-                    setRevealedPrizes(newRevealed);
-                    setAnimatorState({ revealedPrizes: newRevealed });
-                    
-                    setControlsDisabled(true);
-                    await startAnimation(ctx, [highlightUser], handleAnimationComplete, highlightUser);
-                  }
+                  if (isRunning() || !highlightUser) return;
+                  console.log('[BroadcastView] Starting animation for highlighted user:', highlightUser);
+                  // 選択されたユーザーを revealedPrizes から除外し、再描画できるようにする
+                  const newRevealed = revealedPrizes.filter(p => p.participantName !== highlightUser);
+                  setRevealedPrizes(newRevealed);
+                  
+                  setControlsDisabled(true);
+                  await start(canvasRef, [highlightUser], handleAnimationComplete, highlightUser);
                 }}
               >選択した人を表示</button>
               <button 
                 disabled={controlsDisabled || noParticipants}
                 onClick={async () => {
-                  if (isAnimationRunning()) return;
+                  if (isRunning()) return;
                   const revealedNames = new Set(revealedPrizes.map(p => p.participantName));
                   const remaining = allParticipants.filter((p: any) => !revealedNames.has(p.name));
                   if (remaining.length === 0) return;
                   const rand = remaining[Math.floor(Math.random() * remaining.length)];
                   setHighlightUser(rand.name);
-                  const ctx = canvasRef.current?.getContext('2d');
-                  if (ctx) {
-                    console.log('[BroadcastView] Starting animation for random user:', rand.name);
-                    // 選択されたユーザーを revealedPrizes から除外する
-                    const newRevealed = revealedPrizes.filter(p => p.participantName !== rand.name);
-                    setRevealedPrizes(newRevealed);
-                    setAnimatorState({ revealedPrizes: newRevealed });
-                    
-                    setControlsDisabled(true);
-                    await startAnimation(ctx, [rand.name], handleAnimationComplete, rand.name);
-                  }
+                  console.log('[BroadcastView] Starting animation for random user:', rand.name);
+                  // 選択されたユーザーを revealedPrizes から除外する
+                  const newRevealed = revealedPrizes.filter(p => p.participantName !== rand.name);
+                  setRevealedPrizes(newRevealed);
+                  
+                  setControlsDisabled(true);
+                  await start(canvasRef, [rand.name], handleAnimationComplete, rand.name);
                 }}
               >ランダムに一人表示</button>
             </div>

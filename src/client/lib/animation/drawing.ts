@@ -1,6 +1,7 @@
-import {animator, isAnimationRunning, stopAnimation, updateRevealedPrizes} from './core.js';
-import {calculateAllPaths, getTargetHeight, getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight} from './path.js';
-import {preloadIcons} from './setup.js';
+﻿// @ts-nocheck
+import {animator, isAnimationRunning, stopAnimation, updateRevealedPrizes} from './core';
+import {calculateAllPaths, getTargetHeight, getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight} from './path';
+import {preloadIcons} from './setup';
 
 export function wrapText(context, text, x, y, lineLength, lineHeight) {
   if (!text) return;
@@ -338,3 +339,5 @@ export async function showAllTracersInstantly() {
 
   drawRevealedPrizes(targetCtx);
 }
+
+

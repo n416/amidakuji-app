@@ -1,9 +1,10 @@
-import {animator, isAnimationRunning, updateRevealedPrizes} from './core.js';
-import {calculateAllPaths, getTargetHeight, calculatePrizeAreaHeight} from './path.js';
-import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes} from './drawing.js';
+// @ts-nocheck
+import {animator, isAnimationRunning, updateRevealedPrizes} from './core';
+import {calculateAllPaths, getTargetHeight, calculatePrizeAreaHeight} from './path';
+import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes} from './drawing';
 
-export let adminPanzoom = null;
-export let participantPanzoom = null;
+export let adminPanzoom: any = null;
+export let participantPanzoom: any = null;
 let currentAdminPanzoomElement = null;
 let currentParticipantPanzoomElement = null;
 let resizeDebounceTimer;
@@ -153,7 +154,7 @@ window.addEventListener('resize', () => {
   resizeDebounceTimer = setTimeout(handleResize, 350);
 });
 
-export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMask = true, isResize = false, storedState = null, keepRevealed = false, onlyTracerName = null) {
+export async function prepareStepAnimation(targetCtx: any, hidePrizes = false, showMask = true, isResize = false, storedState: any = null, keepRevealed = false, onlyTracerName: any = null) {
   if (!targetCtx || !animator.lotteryData) {
     console.error('[Animation] Prepare failed: No context or lottery data.');
     return;
@@ -244,3 +245,5 @@ export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMa
     }, 50);
   }
 }
+
+

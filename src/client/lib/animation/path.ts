@@ -1,4 +1,5 @@
-import {animator} from './core.js';
+﻿// @ts-nocheck
+import {animator} from './core';
 
 function calculateMaxPrizeLines(prizes = []) {
   if (!prizes || prizes.length === 0) return 1;
@@ -200,3 +201,5 @@ export function calculateClientSideResults(participants, lines, prizes, doodles 
   }
   return results;
 }
+
+
