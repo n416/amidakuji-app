@@ -1,0 +1,27 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:8787",
+      "http://127.0.0.1:8787",
+      "https://amidakuji-app-native.an.r.appspot.com",
+      "https://amidakuji-app.pages.dev",
+      "https://amidakuji-app.tobira-sys.workers.dev"
+    ],
+    "method": [
+      "GET",
+      "HEAD",
+      "PUT",
+      "POST",
+      "DELETE",
+      "OPTIONS"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Access-Control-Allow-Origin",
+      "x-goog-resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

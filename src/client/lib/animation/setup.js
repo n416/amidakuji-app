@@ -1,5 +1,4 @@
-import * as state from '../state.js';
-import {animator, isAnimationRunning} from './core.js';
+import {animator, isAnimationRunning, updateRevealedPrizes} from './core.js';
 import {calculateAllPaths, getTargetHeight, calculatePrizeAreaHeight} from './path.js';
 import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes} from './drawing.js';
 
@@ -137,11 +136,11 @@ export function handleResize() {
 
   if (adminCanvas && adminCanvas.offsetParent !== null) {
     console.log('[Animation] Redrawing admin canvas for resize.');
-    const hidePrizes = state.currentLotteryData?.status !== 'started';
+    const hidePrizes = animator.lotteryData?.status !== 'started';
     prepareStepAnimation(adminCanvas.getContext('2d'), hidePrizes, false, true);
   } else if (participantCanvas && participantCanvas.offsetParent !== null) {
     console.log('[Animation] Redrawing participant canvas for resize.');
-    const hidePrizes = state.currentLotteryData?.displayMode === 'private' && state.currentLotteryData?.status !== 'started';
+    const hidePrizes = animator.lotteryData?.displayMode === 'private' && animator.lotteryData?.status !== 'started';
     prepareStepAnimation(participantCanvas.getContext('2d'), hidePrizes, false, true);
   } else if (participantCanvasStatic && participantCanvasStatic.offsetParent !== null) {
     console.log('[Animation] Redrawing static participant canvas for resize.');
@@ -155,7 +154,7 @@ window.addEventListener('resize', () => {
 });
 
 export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMask = true, isResize = false, storedState = null, keepRevealed = false, onlyTracerName = null) {
-  if (!targetCtx || !state.currentLotteryData) {
+  if (!targetCtx || !animator.lotteryData) {
     console.error('[Animation] Prepare failed: No context or lottery data.');
     return;
   }
@@ -167,24 +166,24 @@ export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMa
   if (mask && showMask) mask.style.display = 'flex';
   if (!isResize) {
     if (!keepRevealed) {
-      state.setRevealedPrizes([]);
+      updateRevealedPrizes([]);
     }
     animator.tracers = [];
     animator.icons = {};
     animator.prizeImages = {};
   }
-  const allParticipantsWithNames = state.currentLotteryData.participants.filter((p) => p.name);
-  await preloadPrizeImages(state.currentLotteryData.prizes);
+  const allParticipantsWithNames = animator.lotteryData.participants.filter((p) => p.name);
+  await preloadPrizeImages(animator.lotteryData.prizes);
   await preloadIcons(allParticipantsWithNames);
   const VIRTUAL_HEIGHT = getTargetHeight(container);
 
-  const allLines = [...(state.currentLotteryData.lines || []), ...(state.currentLotteryData.doodles || [])];
+  const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
 
-  const allPaths = calculateAllPaths(state.currentLotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
+  const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
   animator.tracers = allParticipantsWithNames.map((p) => {
     const path = allPaths[p.slot];
-    const isFinished = state.revealedPrizes.some((r) => r.participantName === p.name);
+    const isFinished = animator.revealedPrizes.some((r) => r.participantName === p.name);
     const finalPoint = isFinished ? path[path.length - 1] : path[0];
     return {
       name: p.name,
@@ -203,7 +202,7 @@ export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMa
   targetCtx.clearRect(0, 0, targetCtx.canvas.width, targetCtx.canvas.height);
   const isDarkMode = document.body.classList.contains('dark-mode');
   const baseLineColor = isDarkMode ? '#dcdcdc' : '#333';
-  drawLotteryBase(targetCtx, state.currentLotteryData, baseLineColor, hidePrizes);
+  drawLotteryBase(targetCtx, animator.lotteryData, baseLineColor, hidePrizes);
 
   // onlyTracerName が指定されている場合、その名前のトレーサーの軌跡のみ描画する
   // それ以外のトレーサーはアイコンのみ表示（「他の人の軌跡見る！」ボタン押下前の状態）
@@ -215,7 +214,7 @@ export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMa
     }
     drawTracerIcon(targetCtx, tracer);
   });
-  if (state.revealedPrizes.length > 0) {
+  if (animator.revealedPrizes.length > 0) {
     drawRevealedPrizes(targetCtx);
   }
 

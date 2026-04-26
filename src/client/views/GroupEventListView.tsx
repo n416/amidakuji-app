@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api';
-// @ts-ignore
-import * as state from '../lib/state.js'; // ParticipantView(未移行)との状態共有のため一時的に残置
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { setCurrentGroupId } from '../store/lotterySlice';
+import { setCurrentGroup, setCurrentGroupEvents } from '../store/adminSlice';
 import { ArrowLeft, X } from 'lucide-react';
 
 export const GroupEventListView: React.FC = () => {
   const { groupId, customUrl } = useParams<{ groupId?: string; customUrl?: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const currentUser = useSelector((state: RootState) => state.auth.user);
 
   const [loading, setLoading] = useState(true);
-  const [group, setGroup] = useState<any>(null);
-  const [events, setEvents] = useState<any[]>([]);
+  const group = useSelector((state: RootState) => state.admin.currentGroup);
+  const events = useSelector((state: RootState) => state.admin.currentGroupEvents);
   const [error, setError] = useState<string | null>(null);
 
   // パスワードモーダル用ステート
@@ -34,8 +38,8 @@ export const GroupEventListView: React.FC = () => {
           currentGroup = isCustomUrl
             ? await api.getGroupByCustomUrl(identifier)
             : await api.getGroup(identifier);
-          setGroup(currentGroup);
-          state.setCurrentGroupId(currentGroup.id);
+          dispatch(setCurrentGroup(currentGroup));
+          dispatch(setCurrentGroupId(currentGroup.id));
         } catch (e: any) {
           setError('不明なグループのイベント一覧');
           setLoading(false);
@@ -46,7 +50,7 @@ export const GroupEventListView: React.FC = () => {
           const fetchedEvents = isCustomUrl
             ? await api.getEventsByCustomUrl(identifier)
             : await api.getPublicEventsForGroup(identifier);
-          setEvents(fetchedEvents);
+          dispatch(setCurrentGroupEvents(fetchedEvents));
         } catch (e: any) {
           if (e.requiresPassword) {
             setShowPasswordModal(true);
@@ -66,7 +70,7 @@ export const GroupEventListView: React.FC = () => {
   const groupName = group ? group.name : '不明なグループ';
 
   const handleBackClick = () => {
-    if (state.currentUser) {
+    if (currentUser) {
       if (group && group.id) {
         navigate(`/admin/groups/${group.id}`);
       } else {
@@ -93,7 +97,7 @@ export const GroupEventListView: React.FC = () => {
             style={{ background: 'none', border: 'none', color: 'var(--primary-color)', display: 'inline-flex', padding: 0 }}
             onClick={handleBackClick}
           >
-            <ArrowLeft size={16} style={{ marginRight: '5px' }} /> {state.currentUser ? '管理ダッシュボードに戻る' : 'ダッシュボードに戻る'}
+            <ArrowLeft size={16} style={{ marginRight: '5px' }} /> {currentUser ? '管理ダッシュボードに戻る' : 'ダッシュボードに戻る'}
           </button>
         )}
       </div>
@@ -154,7 +158,7 @@ export const GroupEventListView: React.FC = () => {
                   const fetchedEvents = isCustomUrl
                     ? await api.getEventsByCustomUrl(identifier!)
                     : await api.getPublicEventsForGroup(identifier!);
-                  setEvents(fetchedEvents);
+                  dispatch(setCurrentGroupEvents(fetchedEvents));
                   setError(null);
                 } catch (retryErr: any) {
                   setError(retryErr.error || 'イベントの読み込みに失敗しました');

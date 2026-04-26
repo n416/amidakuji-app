@@ -30,10 +30,12 @@ export const authMiddleware = createMiddleware<Env>(async (c, next) => {
   await next();
 });
 
-// 管理者権限が必要なルートなどで使うミドルウェアの例
 export const requireAuth = createMiddleware<Env>(async (c, next) => {
   const user = c.get('user');
   if (!user) {
+    if (c.req.path.startsWith('/api/')) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
     return c.redirect('/?login_error=1');
   }
   await next();

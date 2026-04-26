@@ -31,7 +31,9 @@ groups.get('/groups', requireAuth, async (c) => {
       .map((r: any) => {
         const data = db.firestoreToJson(r.document);
         const nameParts = r.document.name.split('/');
-        return { id: nameParts[nameParts.length - 1], ...data };
+        const hasPassword = !!data.password;
+        delete data.password;
+        return { id: nameParts[nameParts.length - 1], ...data, hasPassword };
       });
     return c.json(groupList, 200);
   } catch (error) {
@@ -73,7 +75,9 @@ groups.get('/groups/:groupId', async (c) => {
     if (!doc) return c.json({ error: 'Group not found' }, 404);
     
     const groupData = db.firestoreToJson(doc);
-    return c.json({ id: groupId, ...groupData }, 200);
+    const hasPassword = !!groupData.password;
+    delete groupData.password;
+    return c.json({ id: groupId, ...groupData, hasPassword }, 200);
   } catch (error) {
     return c.json({ error: 'Failed to fetch group' }, 500);
   }
@@ -94,7 +98,10 @@ groups.get('/groups/url/:customUrl', async (c) => {
     }
     const groupDoc = results[0].document;
     const nameParts = groupDoc.name.split('/');
-    return c.json({ id: nameParts[nameParts.length - 1], ...db.firestoreToJson(groupDoc) }, 200);
+    const groupData = db.firestoreToJson(groupDoc);
+    const hasPassword = !!groupData.password;
+    delete groupData.password;
+    return c.json({ id: nameParts[nameParts.length - 1], ...groupData, hasPassword }, 200);
   } catch (error) {
     return c.json({ error: 'Failed to fetch group by custom URL' }, 500);
   }

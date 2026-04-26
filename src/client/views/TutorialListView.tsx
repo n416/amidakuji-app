@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { store } from '../store';
+
 export const TutorialListView: React.FC = () => {
   const navigate = useNavigate();
   const [tutorials, setTutorials] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string>('');
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
 
   useEffect(() => {
     // @ts-ignore
@@ -16,7 +24,7 @@ export const TutorialListView: React.FC = () => {
 
   const handleReset = (id: string, title: string) => {
     localStorage.removeItem(`tutorialCompleted_${id}`);
-    alert(`「${title}」の進捗をリセットしました。`);
+    showToast(`「${title}」の進捗をリセットしました。`);
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -27,8 +35,22 @@ export const TutorialListView: React.FC = () => {
       // @ts-ignore
       window.tutorialManager.setReturnUrl(window.location.pathname);
     }
+    
+    // Create a proxy state similar to App.tsx so generateTutorialUrl can resolve currentGroupId
+    const st = store.getState();
+    const proxyState = {
+      get currentGroupId() { return st.lottery.currentGroupId || st.admin.currentGroup?.id || localStorage.getItem('lastUsedGroupId'); },
+      get currentUser() { return st.auth.user; }
+    };
+
     // @ts-ignore
-    const href = window.tutorialUtils?.generateTutorialUrl(tutorial, window.state) || '#';
+    const href = window.tutorialUtils?.generateTutorialUrl(tutorial, proxyState) || '#';
+    
+    if (href === '#NO_GROUP') {
+      showToast('このチュートリアルを開始するには、グループが必要です。先にグループを作成して選択してください。');
+      return;
+    }
+
     navigate(href);
   };
 
@@ -72,6 +94,11 @@ export const TutorialListView: React.FC = () => {
           </div>
         ))}
       </div>
+      {toastMessage && (
+        <div className="toast active">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };

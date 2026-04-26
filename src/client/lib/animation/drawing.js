@@ -1,9 +1,9 @@
-import * as state from '../state.js';
-import {animator, isAnimationRunning, stopAnimation} from './core.js';
+import {animator, isAnimationRunning, stopAnimation, updateRevealedPrizes} from './core.js';
 import {calculateAllPaths, getTargetHeight, getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight} from './path.js';
 import {preloadIcons} from './setup.js';
 
 export function wrapText(context, text, x, y, lineLength, lineHeight) {
+  if (!text) return;
   let currentY = y;
   for (let i = 0; i < text.length; i += lineLength) {
     const line = text.substring(i, i + lineLength);
@@ -56,7 +56,7 @@ export function drawLotteryBase(targetCtx, data, lineColor = '#ccc', hidePrizes 
 
     targetCtx.fillStyle = p.name ? mainTextColor : subTextColor;
     targetCtx.fillText(displayName, x, nameY);
-    const isRevealed = state.revealedPrizes.some((r) => r.prizeIndex === i);
+    const isRevealed = animator.revealedPrizes.some((r) => r.prizeIndex === i);
     if (prizes && prizes[i] && !isRevealed) {
       const prize = prizes[i];
       const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
@@ -123,9 +123,9 @@ export function drawLotteryBase(targetCtx, data, lineColor = '#ccc', hidePrizes 
 }
 
 function drawDoodleLine(targetCtx, doodle, color, isDashed = true) {
-  if (!doodle || !state.currentLotteryData) return;
+  if (!doodle || !animator.lotteryData) return;
 
-  const {participants} = state.currentLotteryData;
+  const {participants} = animator.lotteryData;
   const numParticipants = participants.length;
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
@@ -139,7 +139,7 @@ function drawDoodleLine(targetCtx, doodle, color, isDashed = true) {
   }
 
   const nameAreaHeight = getNameAreaHeight(container);
-  const prizeAreaHeight = calculatePrizeAreaHeight(state.currentLotteryData.prizes);
+  const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData.prizes);
   const lineTopY = nameAreaHeight;
   const lineBottomY = getTargetHeight(container) - prizeAreaHeight;
   const amidaDrawableHeight = lineBottomY - lineTopY;
@@ -160,7 +160,7 @@ function drawDoodleLine(targetCtx, doodle, color, isDashed = true) {
 }
 
 export function drawDoodlePreview(targetCtx, doodle) {
-  const myParticipant = state.currentLotteryData.participants.find((p) => p.memberId === state.currentParticipantId);
+  const myParticipant = animator.lotteryData.participants.find((p) => p.memberId === animator.participantId);
   const color = myParticipant ? myParticipant.color : '#ff00ff';
   drawDoodleLine(targetCtx, doodle, color, true);
 }
@@ -217,18 +217,19 @@ export function drawRevealedPrizes(targetCtx) {
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
   const VIRTUAL_HEIGHT = getTargetHeight(container);
-  const numParticipants = state.currentLotteryData.participants.length;
+  const numParticipants = animator.lotteryData.participants.length;
   const VIRTUAL_WIDTH = getVirtualWidth(numParticipants, container.clientWidth);
   const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
   const isDarkMode = document.body.classList.contains('dark-mode');
   targetCtx.fillStyle = isDarkMode ? '#e0e0e0' : '#333';
 
-  const prizeAreaHeight = calculatePrizeAreaHeight(state.currentLotteryData?.prizes);
+  const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
   const lineBottomY = VIRTUAL_HEIGHT - prizeAreaHeight;
 
-  state.revealedPrizes.forEach((result) => {
+  animator.revealedPrizes.forEach((result) => {
     const prize = result.prize;
-    const prizeName = typeof prize === 'object' ? prize.name : prize;
+    const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
+    const prizeName = actualPrizeName || '';
     const prizeImage = typeof prize === 'object' && prize.imageUrl ? animator.prizeImages[prize.imageUrl] : null;
     const x = participantSpacing * (result.prizeIndex + 1);
 
@@ -261,20 +262,20 @@ export async function showAllTracersInstantly() {
   if (isAnimationRunning()) stopAnimation();
 
   const targetCtx = animator.context;
-  if (!targetCtx || !state.currentLotteryData) return;
+  if (!targetCtx || !animator.lotteryData) return;
 
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
 
-  const allParticipantsWithNames = state.currentLotteryData.participants.filter((p) => p.name);
+  const allParticipantsWithNames = animator.lotteryData.participants.filter((p) => p.name);
 
   await preloadIcons(allParticipantsWithNames);
 
   const VIRTUAL_HEIGHT = getTargetHeight(container);
-  const numParticipants = state.currentLotteryData.participants.length;
+  const numParticipants = animator.lotteryData.participants.length;
 
-  const allResults = state.currentLotteryData.results;
-  const allPrizes = state.currentLotteryData.prizes;
+  const allResults = animator.lotteryData.results;
+  const allPrizes = animator.lotteryData.prizes;
   if (allResults && allPrizes) {
     const allRevealedPrizes = Object.keys(allResults)
       .map((participantName) => {
@@ -293,11 +294,11 @@ export async function showAllTracersInstantly() {
         return null;
       })
       .filter(Boolean);
-    state.setRevealedPrizes(allRevealedPrizes);
+    updateRevealedPrizes(allRevealedPrizes);
   }
 
-  const allLines = [...(state.currentLotteryData.lines || []), ...(state.currentLotteryData.doodles || [])];
-  const allPaths = calculateAllPaths(state.currentLotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
+  const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
+  const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
   animator.tracers = allParticipantsWithNames.map((p) => {
     const path = allPaths[p.name];
@@ -317,9 +318,9 @@ export async function showAllTracersInstantly() {
   targetCtx.clearRect(0, 0, targetCtx.canvas.width, targetCtx.canvas.height);
   const isDarkMode = document.body.classList.contains('dark-mode');
   const baseLineColor = isDarkMode ? '#dcdcdc' : '#333';
-  const hidePrizes = state.currentLotteryData.displayMode === 'private' && state.currentLotteryData.status !== 'started';
+  const hidePrizes = animator.lotteryData.displayMode === 'private' && animator.lotteryData.status !== 'started';
 
-  drawLotteryBase(targetCtx, state.currentLotteryData, baseLineColor, hidePrizes);
+  drawLotteryBase(targetCtx, animator.lotteryData, baseLineColor, hidePrizes);
 
   // ▼▼▼ ここからが今回の修正点です ▼▼▼
 

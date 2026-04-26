@@ -15,6 +15,18 @@ export const Header: React.FC = () => {
   const [groupDropdownOpen, setGroupDropdownOpen] = useState(false);
   const location = useLocation();
 
+  const [showConfirmModal, setShowConfirmModal] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => {} });
+  const [toastMessage, setToastMessage] = useState<string>('');
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const confirmAction = (message: string, onConfirm: () => void) => {
+    setShowConfirmModal({ isOpen: true, message, onConfirm });
+  };
+
   const isParticipantView = 
     location.pathname.startsWith('/events/') || 
     location.pathname.startsWith('/share/') || 
@@ -45,15 +57,18 @@ export const Header: React.FC = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (confirm('本当にアカウントを削除しますか？この操作は取り消せません。')) {
+    confirmAction('本当にアカウントを削除しますか？この操作は取り消せません。', async () => {
       try {
         await api.deleteUserAccount();
-        alert('アカウントを削除しました。');
-        window.location.href = '/';
+        showToast('アカウントを削除しました。');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
       } catch (e) {
-        alert('アカウント削除に失敗しました。');
+        showToast('アカウント削除に失敗しました。');
+        setShowConfirmModal(prev => ({ ...prev, isOpen: false }));
       }
-    }
+    });
   };
 
   return (
@@ -174,6 +189,23 @@ export const Header: React.FC = () => {
         </header>
       )}
       <ParticipantHeader />
+      {showConfirmModal.isOpen && (
+        <div className="modal" style={{display: 'block', zIndex: 10000}}>
+          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+            <h3>確認</h3>
+            <p style={{whiteSpace: 'pre-wrap'}}>{showConfirmModal.message}</p>
+            <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+              <button className="secondary-btn" onClick={() => setShowConfirmModal({...showConfirmModal, isOpen: false})}>キャンセル</button>
+              <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {toastMessage && (
+        <div className="toast active" style={{zIndex: 10001}}>
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };

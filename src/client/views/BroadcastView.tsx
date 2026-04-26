@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api';
+import { useDispatch } from 'react-redux';
+import { setCurrentEventId, setCurrentGroupId, setCurrentLotteryData } from '../store/lotterySlice';
 // @ts-ignore
-import * as state from '../lib/state.js';
-// @ts-ignore
-import { prepareStepAnimation, resetAnimation, advanceLineByLine, isAnimationRunning, startAnimation, fadePrizes } from '../lib/animation.js';
+import { prepareStepAnimation, resetAnimation, advanceLineByLine, isAnimationRunning, startAnimation, fadePrizes, setAnimatorState } from '../lib/animation.js';
 // @ts-ignore
 import { resetAdminPanzoom } from '../lib/animation/setup.js';
 import { ArrowLeft, Maximize, SlidersHorizontal, X, PartyPopper } from 'lucide-react';
@@ -12,6 +12,7 @@ import { ArrowLeft, Maximize, SlidersHorizontal, X, PartyPopper } from 'lucide-r
 export const BroadcastView: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [eventData, setEventData] = useState<any>(null);
   const [groupData, setGroupData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -44,27 +45,18 @@ export const BroadcastView: React.FC = () => {
         if (!eventId) return;
         const data = await api.getEvent(eventId);
         setEventData(data);
-        state.setCurrentLotteryData(data);
-        state.setCurrentEventId(eventId);
-        state.setCurrentGroupId(data.groupId);
+        dispatch(setCurrentLotteryData(data));
+        setAnimatorState({ lotteryData: data });
+        dispatch(setCurrentEventId(eventId));
+        dispatch(setCurrentGroupId(data.groupId));
         
         try {
           const group = await api.getGroup(data.groupId);
           setGroupData(group);
         } catch(e){}
         
-        if (data.status === 'started' && data.results) {
-          const revealed = Object.entries(data.results).map(([participantName, result]: [string, any]) => ({
-            participantName,
-            prize: result.prize,
-            prizeIndex: result.prizeIndex,
-            revealProgress: 15,
-          }));
-          state.setRevealedPrizes(revealed);
-          setRevealedPrizes(revealed);
-        } else {
-          state.setRevealedPrizes([]);
-        }
+        setRevealedPrizes([]);
+        setAnimatorState({ revealedPrizes: [] });
 
         setLoading(false);
       } catch (error) {
@@ -85,10 +77,11 @@ export const BroadcastView: React.FC = () => {
   }, [loading, isFullscreen, eventData?.status]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRevealedPrizes([...state.revealedPrizes]);
-    }, 500);
-    return () => clearInterval(interval);
+    setAnimatorState({
+      setRevealedPrizesCallback: (prizes: any[]) => {
+        setRevealedPrizes([...prizes]);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -115,7 +108,8 @@ export const BroadcastView: React.FC = () => {
         await api.startEvent(eventId);
         const data = await api.getEvent(eventId);
         setEventData(data);
-        state.setCurrentLotteryData(data);
+        dispatch(setCurrentLotteryData(data));
+        setAnimatorState({ lotteryData: data });
       } catch (e: any) {
         showToast(`エラー: ${e.error}`);
       }
@@ -155,7 +149,7 @@ export const BroadcastView: React.FC = () => {
         <div className={`canvas-panzoom-container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
           {isPending && (
             <div id="adminControls" className="floating-controls" style={{justifyContent: 'center', width: '100%', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex'}}>
-              <button className="primary-action" style={{fontSize: '1.5em', padding: '15px 30px'}} onClick={handleStartEvent}>
+              <button id="startEventButton" className="primary-action" style={{fontSize: '1.5em', padding: '15px 30px'}} onClick={handleStartEvent}>
                 <PartyPopper size={24} style={{marginRight: '10px'}} /> イベント開始！
               </button>
               <button 
@@ -208,9 +202,13 @@ export const BroadcastView: React.FC = () => {
             <div className="control-group">
               <h5>全体進行</h5>
               <button 
+                id="animateAllButton"
                 disabled={controlsDisabled || noParticipants}
                 onClick={async () => {
                   setControlsDisabled(true);
+                  // 全結果を再生する時は全て未公開状態に戻す
+                  setRevealedPrizes([]);
+                  setAnimatorState({ revealedPrizes: [] });
                   await resetAnimation(handleAnimationComplete);
                 }}
               >全結果を再生</button>
@@ -237,6 +235,12 @@ export const BroadcastView: React.FC = () => {
                   if (isAnimationRunning() || !highlightUser) return;
                   const ctx = canvasRef.current?.getContext('2d');
                   if (ctx) {
+                    console.log('[BroadcastView] Starting animation for highlighted user:', highlightUser);
+                    // 選択されたユーザーを revealedPrizes から除外し、再描画できるようにする
+                    const newRevealed = revealedPrizes.filter(p => p.participantName !== highlightUser);
+                    setRevealedPrizes(newRevealed);
+                    setAnimatorState({ revealedPrizes: newRevealed });
+                    
                     setControlsDisabled(true);
                     await startAnimation(ctx, [highlightUser], handleAnimationComplete, highlightUser);
                   }
@@ -253,6 +257,12 @@ export const BroadcastView: React.FC = () => {
                   setHighlightUser(rand.name);
                   const ctx = canvasRef.current?.getContext('2d');
                   if (ctx) {
+                    console.log('[BroadcastView] Starting animation for random user:', rand.name);
+                    // 選択されたユーザーを revealedPrizes から除外する
+                    const newRevealed = revealedPrizes.filter(p => p.participantName !== rand.name);
+                    setRevealedPrizes(newRevealed);
+                    setAnimatorState({ revealedPrizes: newRevealed });
+                    
                     setControlsDisabled(true);
                     await startAnimation(ctx, [rand.name], handleAnimationComplete, rand.name);
                   }

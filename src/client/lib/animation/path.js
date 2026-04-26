@@ -1,4 +1,4 @@
-import * as state from '../state.js';
+import {animator} from './core.js';
 
 function calculateMaxPrizeLines(prizes = []) {
   if (!prizes || prizes.length === 0) return 1;
@@ -35,7 +35,7 @@ export function getNameAreaHeight(container) {
 
 export function getTargetHeight(container) {
   const nameAreaHeight = getNameAreaHeight(container);
-  const prizeAreaHeight = calculatePrizeAreaHeight(state.currentLotteryData?.prizes);
+  const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
   const minAmidaHeight = 300;
   if (container && container.classList.contains('fullscreen-mode')) {
     return window.innerHeight;
@@ -55,7 +55,7 @@ export function calculatePath(startIdx, allLines, numParticipants, containerWidt
   const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
   const sortedLines = [...allLines].sort((a, b) => a.y - b.y);
   const nameAreaHeight = getNameAreaHeight(container);
-  const prizeAreaHeight = calculatePrizeAreaHeight(state.currentLotteryData?.prizes);
+  const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
   const lineTopY = nameAreaHeight;
   const lineBottomY = containerHeight - prizeAreaHeight;
   const amidaDrawableHeight = lineBottomY - lineTopY;
@@ -132,7 +132,7 @@ export function calculateAllPaths(participants, allLines, containerWidth, contai
     if (!p.name) return;
 
     const nameAreaHeight = getNameAreaHeight(container);
-    const prizeAreaHeight = calculatePrizeAreaHeight(state.currentLotteryData?.prizes);
+    const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
     const lineTopY = nameAreaHeight;
     const lineBottomY = containerHeight - prizeAreaHeight;
     const amidaDrawableHeight = lineBottomY - lineTopY;

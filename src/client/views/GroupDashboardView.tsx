@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
+import { setGroups, setLoadingGroups } from '../store/adminSlice';
 import { X } from 'lucide-react';
+import * as api from '../lib/api';
+import { GroupSettingsModal } from '../components/admin/GroupSettingsModal';
 
 export const GroupDashboardView: React.FC = () => {
-  const [groups, setGroups] = useState<any[]>([]);
+  const dispatch = useDispatch();
+  const groups = useSelector((state: RootState) => state.admin.groups);
+  const loadingGroups = useSelector((state: RootState) => state.admin.loadingGroups);
+  
   const [newGroupName, setNewGroupName] = useState('');
-  const [loading, setLoading] = useState(true);
   const [requestAdminLoading, setRequestAdminLoading] = useState(false);
   const [settingsGroup, setSettingsGroup] = useState<any>(null);
-  const [settingsData, setSettingsData] = useState({ name: '', customUrl: '', noIndex: false, password: '' });
   
   // UI States
   const [toastMessage, setToastMessage] = useState('');
@@ -26,35 +30,20 @@ export const GroupDashboardView: React.FC = () => {
     }
   }, [toastMessage]);
 
-  const fetchGroups = async () => {
+  const fetchGroupsData = async () => {
+    dispatch(setLoadingGroups(true));
     try {
-      const res = await fetch('/api/groups', { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setGroups(data as any[]);
-      }
+      const data = await api.getGroups();
+      dispatch(setGroups(data));
     } catch (e) {
       console.error('Failed to fetch groups', e);
-    } finally {
-      setLoading(false);
+      dispatch(setLoadingGroups(false));
     }
   };
 
   useEffect(() => {
-    fetchGroups();
-
-    const handleGroupsUpdated = (e: any) => {
-      if (e.detail) {
-        setGroups(e.detail);
-      } else {
-        fetchGroups();
-      }
-    };
-    window.addEventListener('groupsUpdated', handleGroupsUpdated);
-    return () => {
-      window.removeEventListener('groupsUpdated', handleGroupsUpdated);
-    };
-  }, []);
+    fetchGroupsData();
+  }, [dispatch]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).lucide) {
@@ -68,17 +57,9 @@ export const GroupDashboardView: React.FC = () => {
       return;
     }
     try {
-      const res = await fetch('/api/groups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupName: newGroupName.trim(), participants: [] }),
-      });
-      if (!res.ok) {
-        const err = await res.json() as any;
-        throw new Error(err.error || 'Failed to create group');
-      }
+      await api.createGroup(newGroupName.trim());
       setNewGroupName('');
-      fetchGroups();
+      fetchGroupsData();
       setToastMessage('グループを作成しました。');
     } catch (e: any) {
       setToastMessage(e.message || 'グループの作成に失敗しました。');
@@ -90,13 +71,9 @@ export const GroupDashboardView: React.FC = () => {
       message: `グループ「${groupName}」を削除しますか？\n関連するすべてのイベントも削除され、元に戻せません。`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/groups/${groupId}`, { method: 'DELETE' });
-          if (!res.ok) {
-            const err = await res.json() as any;
-            throw new Error(err.error || 'Failed to delete group');
-          }
+          await api.deleteGroup(groupId);
           setToastMessage('グループを削除しました。');
-          fetchGroups();
+          fetchGroupsData();
         } catch (e: any) {
           setToastMessage(e.message || 'グループの削除に失敗しました。');
         }
@@ -108,61 +85,15 @@ export const GroupDashboardView: React.FC = () => {
     const group = groups.find(g => g.id === groupId);
     if (group) {
       setSettingsGroup(group);
-      setSettingsData({
-        name: group.name || '',
-        customUrl: group.customUrl || '',
-        noIndex: group.noIndex || false,
-        password: ''
-      });
     }
   };
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload: any = {
-        name: settingsData.name.trim(),
-        customUrl: settingsData.customUrl.trim(),
-        noIndex: settingsData.noIndex
-      };
-      if (settingsData.password) payload.password = settingsData.password;
-      
-      const res = await fetch(`/api/groups/${settingsGroup.id}/settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error('Failed to update settings');
-      
-      setToastMessage('設定を保存しました。');
-      setSettingsGroup(null);
-      fetchGroups();
-    } catch (e) {
-      setToastMessage('設定の保存に失敗しました。');
-    }
-  };
 
-  const handleDeletePassword = () => {
-    setConfirmDialog({
-      message: '本当にこのグループの合言葉を削除しますか？',
-      onConfirm: async () => {
-        try {
-          const res = await fetch(`/api/groups/${settingsGroup.id}/password`, { method: 'DELETE' });
-          if (!res.ok) throw new Error('Failed to delete password');
-          setToastMessage('合言葉を削除しました。');
-          setSettingsGroup((prev: any) => ({...prev, password: null}));
-        } catch (e) {
-          setToastMessage('合言葉の削除に失敗しました。');
-        }
-      }
-    });
-  };
 
   const handleRequestAdmin = async () => {
     setRequestAdminLoading(true);
     try {
-      const res = await fetch('/api/admin/request', { method: 'POST' });
-      if (!res.ok) throw new Error('Failed to request admin');
+      await api.requestAdminAccess();
       setToastMessage('管理者権限を申請しました。承認をお待ちください。');
       // リロードしてReduxのユーザーステートを最新化（Vanilla JS側と同期）
       setTimeout(() => window.location.reload(), 1000);
@@ -191,7 +122,7 @@ export const GroupDashboardView: React.FC = () => {
         </div>
       </div>
       
-      {loading ? (
+      {loadingGroups ? (
         <p>読み込み中...</p>
       ) : (
         <ul id="groupList" className="item-list">
@@ -229,49 +160,16 @@ export const GroupDashboardView: React.FC = () => {
       )}
 
       {settingsGroup && (
-        <div id="groupSettingsModal" className="modal" style={{display: 'block', zIndex: 2000}}>
-          <div className="modal-content">
-            <span className="close-button" onClick={() => setSettingsGroup(null)}><X /></span>
-            <form onSubmit={handleSaveSettings}>
-              <h3>グループ設定: <span>{settingsGroup.name}</span></h3>
-              <div className="input-group">
-                <label htmlFor="groupNameEditInput">グループ名:</label>
-                <input type="text" id="groupNameEditInput" value={settingsData.name} onChange={e => setSettingsData({...settingsData, name: e.target.value})} required placeholder="グループ名" autoComplete="off" />
-              </div>
-              <div className="input-group">
-                <label htmlFor="customUrlInput">カスタムURL:</label>
-                <input type="text" id="customUrlInput" value={settingsData.customUrl} onChange={e => setSettingsData({...settingsData, customUrl: e.target.value})} pattern="^[a-zA-Z0-9-]+$" title="半角英数字とハイフンのみ使用できます" placeholder="例: my-event-2025" autoComplete="off" />
-              </div>
-              <p className="url-preview">
-                <code>/g/<span>{settingsData.customUrl}</span></code>
-              </p>
-              <div className="input-group">
-                <label htmlFor="groupPasswordInput">合言葉:</label>
-                <input 
-                  type="password" 
-                  id="groupPasswordInput" 
-                  value={settingsData.password} 
-                  onChange={e => setSettingsData({...settingsData, password: e.target.value})} 
-                  placeholder={settingsGroup.hasPassword ? "新規設定・変更のみ入力（現在設定済）" : "新規設定・変更のみ入力"}
-                  autoComplete="current-password"
-                />
-              </div>
-              <div className="input-group checkbox-group">
-                <input type="checkbox" id="noIndexCheckbox" checked={settingsData.noIndex} onChange={e => setSettingsData({...settingsData, noIndex: e.target.checked})} />
-                <label htmlFor="noIndexCheckbox">検索エンジンにインデックスさせない (noindex)</label>
-              </div>
-
-              <div className="modal-actions">
-                {settingsGroup.hasPassword && (
-                  <button type="button" id="deletePasswordButton" className="delete-btn action-left" onClick={handleDeletePassword}>
-                    合言葉削除
-                  </button>
-                )}
-                <button type="submit" id="saveGroupSettingsButton" className="primary-action">設定保存</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <GroupSettingsModal
+          settingsGroup={settingsGroup}
+          onClose={() => setSettingsGroup(null)}
+          onSaved={() => {
+            setSettingsGroup(null);
+            fetchGroupsData();
+          }}
+          setToastMessage={setToastMessage}
+          setConfirmDialog={setConfirmDialog}
+        />
       )}
 
       {toastMessage && (

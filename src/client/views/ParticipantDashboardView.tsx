@@ -1,13 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api';
-// @ts-ignore
-import * as state from '../lib/state.js';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { setCurrentGroupId } from '../store/lotterySlice';
+import { setParticipantSession, clearParticipantSession } from '../store/participantSlice';
 import { LogOut, Trash2, Edit3, Key, PartyPopper, Gift, AlertTriangle, ArrowLeft, ImagePlus, X, Lock } from 'lucide-react';
 
 export const ParticipantDashboardView: React.FC = () => {
   const { groupId, customUrl } = useParams<{ groupId?: string; customUrl?: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const participantSession = useSelector((state: RootState) => state.participant);
 
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState<any>(null);
@@ -40,6 +44,12 @@ export const ParticipantDashboardView: React.FC = () => {
   
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [participantHasPassword, setParticipantHasPassword] = useState(false);
+
+  // メンバーログイン用合言葉モーダル
+  const [showMemberPasswordModal, setShowMemberPasswordModal] = useState(false);
+  const [memberPasswordInput, setMemberPasswordInput] = useState('');
+  const [pendingLoginName, setPendingLoginName] = useState('');
 
   // グループ合言葉入力用ステート
   const [showGroupPasswordModal, setShowGroupPasswordModal] = useState(false);
@@ -77,23 +87,23 @@ export const ParticipantDashboardView: React.FC = () => {
         : await api.getGroup(identifier);
       
       setGroup(groupData);
-      state.setCurrentGroupId(groupData.id);
+      dispatch(setCurrentGroupId(groupData.id));
 
       const fetchedEvents = await api.getPublicEventsForGroup(groupData.id);
       setEvents(fetchedEvents);
 
-      state.loadParticipantState();
-      if (state.currentParticipantId && state.currentParticipantToken) {
+      if (participantSession.memberId && participantSession.token) {
         setIsLoggedIn(true);
-        setParticipantName(state.currentParticipantName);
-        setParticipantId(state.currentParticipantId);
+        setParticipantName(participantSession.name || '');
+        setParticipantId(participantSession.memberId);
         
         // Load additional participant info (color, iconUrl) via API
         try {
-          const participantInfo = await api.getMemberDetails(groupData.id, state.currentParticipantId);
+          const participantInfo = await api.getMemberDetails(groupData.id, participantSession.memberId);
           if (participantInfo) {
             setProfileColorInput(participantInfo.color || '#000000');
             setProfileIconUrlInput(participantInfo.iconUrl || null);
+            setParticipantHasPassword(participantInfo.hasPassword || false);
           }
         } catch (e) {
           console.error('Failed to load member details', e);
@@ -147,7 +157,7 @@ export const ParticipantDashboardView: React.FC = () => {
     
     try {
       const res = await api.loginOrRegisterToGroup(group.id, nameInput.trim());
-      state.saveParticipantState(res.token, res.memberId, nameInput.trim());
+      dispatch(setParticipantSession({ token: res.token, memberId: res.memberId, name: nameInput.trim(), groupId: group.id }));
       setIsLoggedIn(true);
       setParticipantName(nameInput.trim());
       setParticipantId(res.memberId);
@@ -155,29 +165,36 @@ export const ParticipantDashboardView: React.FC = () => {
       fetchDashboardData(); // Refresh events to show join status
     } catch (err: any) {
       if (err.requiresPassword) {
-        const pwd = prompt('合言葉を入力してください:');
-        if (pwd) {
-          try {
-            const res2 = await api.loginOrRegisterToGroup(group.id, nameInput.trim(), pwd);
-            state.saveParticipantState(res2.token, res2.memberId, nameInput.trim());
-            setIsLoggedIn(true);
-            setParticipantName(nameInput.trim());
-            setParticipantId(res2.memberId);
-            setNameInput('');
-            fetchDashboardData();
-          } catch (err2: any) {
-            setLoginError(err2.error || '合言葉が違います');
-          }
-        }
+        setPendingLoginName(nameInput.trim());
+        setShowMemberPasswordModal(true);
       } else {
         setLoginError(err.error || 'ログインに失敗しました');
       }
     }
   };
 
+  const handleMemberLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingLoginName || !group) return;
+    try {
+      const res2 = await api.loginOrRegisterToGroup(group.id, pendingLoginName, memberPasswordInput);
+      dispatch(setParticipantSession({ token: res2.token, memberId: res2.memberId, name: pendingLoginName, groupId: group.id }));
+      setIsLoggedIn(true);
+      setParticipantName(pendingLoginName);
+      setParticipantId(res2.memberId);
+      setNameInput('');
+      setMemberPasswordInput('');
+      setShowMemberPasswordModal(false);
+      fetchDashboardData();
+    } catch (err2: any) {
+      setLoginError(err2.error || '合言葉が違います');
+      setShowMemberPasswordModal(false); // Close modal and show error in main form
+    }
+  };
+
   const handleLogout = () => {
     confirmAction('ログアウトしますか？', () => {
-      state.clearParticipantState();
+      dispatch(clearParticipantSession());
       setIsLoggedIn(false);
       setParticipantName('');
       setParticipantId('');
@@ -189,9 +206,9 @@ export const ParticipantDashboardView: React.FC = () => {
     if (!group) return;
     confirmAction('本当にアカウントを削除しますか？\n（参加中のイベントからも名前が消えます）', async () => {
       try {
-        await api.deleteMemberAccount(group.id, participantId, state.currentParticipantToken);
+        await api.deleteMemberAccount(group.id, participantId, participantSession.token!);
         showToast('アカウントを削除しました。');
-        state.clearParticipantState();
+        dispatch(clearParticipantSession());
         setIsLoggedIn(false);
         setParticipantName('');
         setParticipantId('');
@@ -213,7 +230,7 @@ export const ParticipantDashboardView: React.FC = () => {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const fileHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
-        const resUrl = await api.generateUploadUrl(participantId, newIconFile.type, fileHash, state.currentParticipantToken);
+        const resUrl = await api.generateUploadUrl(participantId, newIconFile.type, fileHash, participantSession.token!);
         if (resUrl && resUrl.signedUrl) {
           const resUpload = await fetch(resUrl.signedUrl, { method: 'PUT', headers: { 'Content-Type': newIconFile.type }, body: newIconFile });
           if (!resUpload.ok) throw new Error('画像のアップロードに失敗しました');
@@ -221,8 +238,8 @@ export const ParticipantDashboardView: React.FC = () => {
         }
       }
 
-      await api.updateProfile(participantId, { name: profileNameInput.trim(), color: profileColorInput, iconUrl: iconUrlToSave }, group.id, state.currentParticipantToken);
-      state.saveParticipantState(state.currentParticipantToken!, participantId, profileNameInput.trim());
+      await api.updateProfile(participantId, { name: profileNameInput.trim(), color: profileColorInput, iconUrl: iconUrlToSave }, group.id, participantSession.token!);
+      dispatch(setParticipantSession({ name: profileNameInput.trim() }));
       setParticipantName(profileNameInput.trim());
       setShowProfileModal(false);
       setNewIconFile(null);
@@ -239,15 +256,35 @@ export const ParticipantDashboardView: React.FC = () => {
   const handleSetPassword = async () => {
     setLoading(true);
     try {
-      await api.setPassword(participantId, newPasswordInput, group.id, state.currentParticipantToken);
+      await api.setPassword(participantId, newPasswordInput, group.id, participantSession.token!);
       showToast('合言葉を設定しました。');
       setShowPasswordModal(false);
       setNewPasswordInput('');
+      setParticipantHasPassword(!!newPasswordInput);
     } catch (err: any) {
       showToast(err.error || '合言葉の設定に失敗しました');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeletePassword = () => {
+    if (!group) return;
+    confirmAction('合言葉を削除しますか？\n（誰でもこのアカウントを利用できるようになります）', async () => {
+      setLoading(true);
+      try {
+        await api.setPassword(participantId, '', group.id, participantSession.token!);
+        showToast('合言葉を削除しました。');
+        setShowPasswordModal(false);
+        setParticipantHasPassword(false);
+        setNewPasswordInput('');
+      } catch (err: any) {
+        showToast(err.error || '合言葉の削除に失敗しました');
+      } finally {
+        setLoading(false);
+        setShowConfirmModal({ ...showConfirmModal, isOpen: false });
+      }
+    });
   };
 
   if (loading) return <div className="loading-mask" style={{display: 'flex'}}>読み込み中...</div>;
@@ -398,6 +435,31 @@ export const ParticipantDashboardView: React.FC = () => {
         </div>
       )}
 
+      {/* メンバーログイン用合言葉入力モーダル */}
+      {showMemberPasswordModal && (
+        <div className="modal" style={{display: 'block'}}>
+          <div className="modal-content">
+            <span className="close-button" onClick={() => setShowMemberPasswordModal(false)}>
+              <X size={24} />
+            </span>
+            <h3>本人確認</h3>
+            <p><strong>{pendingLoginName}</strong> さんの合言葉を入力してください。</p>
+            <form onSubmit={handleMemberLoginSubmit} className="input-group">
+              <input
+                type="password"
+                placeholder="合言葉を入力"
+                value={memberPasswordInput}
+                onChange={(e) => setMemberPasswordInput(e.target.value)}
+                autoFocus
+              />
+              <div className="modal-actions">
+                <button type="submit" className="primary-action" disabled={!memberPasswordInput}>ログイン</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showProfileModal && (
         <div className="modal" style={{display: 'block'}}>
           <div className="modal-content">
@@ -449,20 +511,42 @@ export const ParticipantDashboardView: React.FC = () => {
       {showPasswordModal && (
         <div className="modal" style={{display: 'block'}}>
           <div className="modal-content">
-            <span className="close-button" onClick={() => setShowPasswordModal(false)}>x</span>
+            <span className="close-button" onClick={() => setShowPasswordModal(false)}><X size={24} /></span>
             <h3>合言葉の設定</h3>
             <p>合言葉を設定すると、他の人があなたのアカウントを使うのを防げます。</p>
             <div className="input-group">
-              <label>新しい合言葉 (空で削除):</label>
-              <input 
-                type="password" 
-                value={newPasswordInput} 
-                onChange={e => setNewPasswordInput(e.target.value)} 
-                placeholder="新しい合言葉"
-              />
+              <label>新しい合言葉:</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input 
+                  type="password" 
+                  value={newPasswordInput} 
+                  onChange={e => setNewPasswordInput(e.target.value)} 
+                  placeholder={participantHasPassword ? "変更する場合は入力" : "新しい合言葉"}
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  type="button" 
+                  className="secondary-btn" 
+                  onClick={() => setNewPasswordInput('')}
+                  title="入力をクリア"
+                >
+                  クリア
+                </button>
+              </div>
             </div>
-            <div className="modal-actions">
-              <button className="primary-action" onClick={handleSetPassword}>設定を保存</button>
+            <div className="modal-actions" style={{marginTop: '20px'}}>
+              {participantHasPassword && (
+                <button 
+                  type="button" 
+                  className="delete-btn action-left" 
+                  onClick={handleDeletePassword} 
+                >
+                  合言葉削除
+                </button>
+              )}
+              <button className="primary-action" onClick={handleSetPassword} disabled={!newPasswordInput.trim()}>
+                {participantHasPassword ? "変更を保存" : "設定を保存"}
+              </button>
             </div>
           </div>
         </div>

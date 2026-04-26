@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
+import * as api from '../lib/api';
 
 export const AdminDashboardView: React.FC = () => {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -36,8 +37,8 @@ export const AdminDashboardView: React.FC = () => {
 
   const fetchPendingRequests = async () => {
     try {
-      const res = await fetch('/api/admin/requests', { credentials: 'include' });
-      if (res.ok) setPendingRequests(await res.json());
+      const data = await api.getAdminRequests();
+      setPendingRequests(data);
     } catch (e) {
       console.error('Failed to fetch pending requests', e);
     }
@@ -45,19 +46,10 @@ export const AdminDashboardView: React.FC = () => {
 
   const fetchGroupAdmins = async (cursor: any = null, search = groupAdminSearch) => {
     try {
-      let endpoint = '/api/admin/group-admins';
-      const params = new URLSearchParams();
-      if (cursor) params.append('lastVisible', cursor);
-      if (search) params.append('searchId', search);
-      if (params.toString()) endpoint += `?${params.toString()}`;
-
-      const res = await fetch(endpoint, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        setGroupAdmins((data as any)?.admins || []);
-        setGroupAdminNextCursor((data as any)?.lastVisible);
-        setGroupAdminHasNext((data as any)?.hasNextPage || false);
-      }
+      const data = await api.getGroupAdmins(cursor, search);
+      setGroupAdmins((data as any)?.admins || []);
+      setGroupAdminNextCursor((data as any)?.lastVisible);
+      setGroupAdminHasNext((data as any)?.hasNextPage || false);
     } catch (e) {
       console.error('Failed to fetch group admins', e);
       setGroupAdmins([]);
@@ -66,19 +58,10 @@ export const AdminDashboardView: React.FC = () => {
 
   const fetchSystemAdmins = async (cursor: any = null, search = systemAdminSearch) => {
     try {
-      let endpoint = '/api/admin/system-admins';
-      const params = new URLSearchParams();
-      if (cursor) params.append('lastVisible', cursor);
-      if (search) params.append('searchId', search);
-      if (params.toString()) endpoint += `?${params.toString()}`;
-
-      const res = await fetch(endpoint, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json() as any;
-        setSystemAdmins(data?.admins || []);
-        setSystemAdminNextCursor(data?.lastVisible);
-        setSystemAdminHasNext(data?.hasNextPage || false);
-      }
+      const data = await api.getSystemAdmins(cursor, search);
+      setSystemAdmins(data?.admins || []);
+      setSystemAdminNextCursor(data?.lastVisible);
+      setSystemAdminHasNext(data?.hasNextPage || false);
     } catch (e) {
       console.error('Failed to fetch system admins', e);
       setSystemAdmins([]);
@@ -98,12 +81,7 @@ export const AdminDashboardView: React.FC = () => {
   const handleApproveAdmin = async (requestId: string) => {
     confirmAction('このユーザーの管理者権限を承認しますか？', async () => {
       try {
-        const res = await fetch('/api/admin/approve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requestId })
-        });
-        if (!res.ok) throw new Error('Failed to approve request');
+        await api.approveAdminRequest(requestId);
         showToast('申請を承認しました。');
         fetchAdminData();
       } catch (e) {
@@ -116,12 +94,7 @@ export const AdminDashboardView: React.FC = () => {
   const handleImpersonate = async (userId: string) => {
     confirmAction('このユーザーとしてログインしますか？', async () => {
       try {
-        const res = await fetch('/api/admin/impersonate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ targetUserId: userId })
-        });
-        if (!res.ok) throw new Error('Failed to impersonate');
+        await api.impersonateUser(userId);
         showToast('成り代わりました。ページをリロードします。');
         setTimeout(() => window.location.href = '/', 1000);
       } catch (e) {
@@ -134,12 +107,7 @@ export const AdminDashboardView: React.FC = () => {
   const handleDemoteAdmin = async (userId: string) => {
     confirmAction('本当にこのシステム管理者を通常ユーザーに戻しますか？', async () => {
       try {
-        const res = await fetch('/api/admin/demote', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId })
-        });
-        if (!res.ok) throw new Error('Failed to demote');
+        await api.demoteAdmin(userId);
         showToast('ユーザーを降格させました。');
         fetchAdminData();
       } catch (e) {

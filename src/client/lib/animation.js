@@ -1,5 +1,4 @@
-import * as state from './state.js'; // この行を追記
-import {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator} from './animation/core.js';
+import {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator, setAnimatorState} from './animation/core.js';
 import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes, wrapText, showAllTracersInstantly} from './animation/drawing.js';
 import {calculatePath, getVirtualWidth, getTargetHeight, calculatePrizeAreaHeight, getNameAreaHeight, calculateClientSideResults} from './animation/path.js';
 import {prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, handleResize, adminPanzoom, participantPanzoom} from './animation/setup.js';
@@ -12,9 +11,9 @@ let currentPrizeAlpha = 0;
 // ★★★ ここからが修正点 ★★★
 // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
 function drawPrizesOnly(targetCtx, hidePrizes) {
-  if (!targetCtx || !targetCtx.canvas || !state.currentLotteryData) return;
+  if (!targetCtx || !targetCtx.canvas || !animator.lotteryData) return;
 
-  const {participants, prizes} = state.currentLotteryData;
+  const {participants, prizes} = animator.lotteryData;
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
   const numParticipants = participants.length;
@@ -31,7 +30,7 @@ function drawPrizesOnly(targetCtx, hidePrizes) {
 
   // Redraw prizes
   prizes.forEach((prize, i) => {
-    const isRevealed = state.revealedPrizes.some((r) => r.prizeIndex === i);
+    const isRevealed = animator.revealedPrizes.some((r) => r.prizeIndex === i);
     if (!isRevealed) {
       const x = participantSpacing * (i + 1);
       const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
@@ -99,4 +98,4 @@ export function fadePrizes(targetCtx, show) {
   prizeFadeAnimationId = requestAnimationFrame(step);
 }
 
-export {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, prepareStepAnimation, showAllTracersInstantly, adminPanzoom, participantPanzoom};
+export {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, prepareStepAnimation, showAllTracersInstantly, adminPanzoom, participantPanzoom, setAnimatorState};

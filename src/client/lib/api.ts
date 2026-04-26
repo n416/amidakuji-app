@@ -1,6 +1,4 @@
 // lib/api.ts
-// @ts-ignore
-import * as state from './state.js';
 
 async function request(endpoint: string, method: string = 'GET', body: any = null, headers: Record<string, string> = {}): Promise<any> {
   const options: RequestInit = {
@@ -55,14 +53,22 @@ export const copyEvent = (eventId: string): Promise<any> => request(`/api/events
 export const deleteEvent = (eventId: string): Promise<any> => request(`/api/events/${eventId}`, 'DELETE');
 export const startEvent = (eventId: string): Promise<any> => request(`/api/events/${eventId}/start`, 'POST');
 export const generateEventPrizeUploadUrl = (eventId: string, fileType: string, fileHash: string, groupId?: string): Promise<any> => request(`/api/events/${eventId}/generate-upload-url`, 'POST', {fileType, fileHash, groupId});
-export const addDoodle = (eventId: string, memberId: string, doodle: any): Promise<any> => request(`/api/events/${eventId}/doodle`, 'POST', {memberId, doodle}, {'x-auth-token': state.currentParticipantToken});
-export const deleteDoodle = (eventId: string, memberId: string): Promise<any> => request(`/api/events/${eventId}/doodle`, 'DELETE', {memberId}, {'x-auth-token': state.currentParticipantToken});
-
-export const getPublicEventData = (eventId: string): Promise<any> => {
+export const addDoodle = (eventId: string, memberId: string, doodle: any, token?: string | null): Promise<any> => {
   const headers: Record<string, string> = {};
-  if (state.currentParticipantId && state.currentParticipantToken) {
-    headers['x-member-id'] = state.currentParticipantId;
-    headers['x-auth-token'] = state.currentParticipantToken;
+  if (token) headers['x-auth-token'] = token;
+  return request(`/api/events/${eventId}/doodle`, 'POST', {memberId, doodle}, headers);
+};
+export const deleteDoodle = (eventId: string, memberId: string, token?: string | null): Promise<any> => {
+  const headers: Record<string, string> = {};
+  if (token) headers['x-auth-token'] = token;
+  return request(`/api/events/${eventId}/doodle`, 'DELETE', {memberId}, headers);
+};
+
+export const getPublicEventData = (eventId: string, memberId?: string | null, token?: string | null): Promise<any> => {
+  const headers: Record<string, string> = {};
+  if (memberId && token) {
+    headers['x-member-id'] = memberId;
+    headers['x-auth-token'] = token;
   }
   return request(`/api/events/${eventId}/public`, 'GET', null, headers);
 };
@@ -107,7 +113,7 @@ export const demoteAdmin = (userId: string): Promise<any> => request('/api/admin
 export const impersonateUser = (targetUserId: string): Promise<any> => request('/api/admin/impersonate', 'POST', {targetUserId});
 export const stopImpersonating = (): Promise<any> => request('/api/admin/stop-impersonating', 'POST');
 export const getPasswordRequests = (groupId: string): Promise<any> => request(`/api/admin/groups/${groupId}/password-requests`);
-export const approvePasswordReset = (memberId: string, groupId: string, requestId: string): Promise<any> => request(`/api/admin/members/${memberId}/delete-password`, 'POST', {groupId, requestId});
+export const approvePasswordReset = (memberId: string, groupId: string, requestId?: string): Promise<any> => request(`/api/admin/members/${memberId}/delete-password`, 'POST', {groupId, requestId});
 export const logout = (): Promise<any> => request('/auth/logout', 'GET');
 export const clearGroupVerification = (): Promise<any> => request('/auth/clear-group-verification', 'POST');
 

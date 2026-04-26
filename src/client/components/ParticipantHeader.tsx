@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-// @ts-ignore
-import * as state from '../lib/state.js';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { clearParticipantSession } from '../store/participantSlice';
 
 export const ParticipantHeader: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [participantName, setParticipantName] = useState<string>('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [groupId, setGroupId] = useState<string | null>(null);
+  const dispatch = useDispatch();
+  const participantSession = useSelector((state: RootState) => state.participant);
+  const lotteryState = useSelector((state: RootState) => state.lottery);
 
   const isParticipantView = 
     location.pathname.startsWith('/events/') || 
@@ -18,40 +19,22 @@ export const ParticipantHeader: React.FC = () => {
 
   const isShareView = location.pathname.startsWith('/share/');
 
-  useEffect(() => {
-    const checkState = () => {
-      state.loadParticipantState();
-      setGroupId(state.currentGroupId);
-      if (state.currentParticipantId && state.currentParticipantToken) {
-        setIsLoggedIn(true);
-        setParticipantName(state.currentParticipantName || '');
-      } else {
-        setIsLoggedIn(false);
-      }
-    };
-
-    checkState();
-
-    window.addEventListener('participantStateChanged', checkState);
-    return () => {
-      window.removeEventListener('participantStateChanged', checkState);
-    };
-  }, [location.pathname]);
+  const isLoggedIn = !!(participantSession.memberId && participantSession.token);
+  const participantName = participantSession.name || '';
+  const groupId = participantSession.groupId || lotteryState.currentGroupId;
 
   if (!isParticipantView || isShareView) {
     return null;
   }
 
   const handleLogout = () => {
-    state.clearParticipantState();
+    dispatch(clearParticipantSession());
     window.location.reload();
   };
 
   const handleDashboard = () => {
     if (groupId) {
       navigate(`/groups/${groupId}/dashboard`);
-    } else if (state.currentGroupId) {
-      navigate(`/groups/${state.currentGroupId}/dashboard`);
     } else {
       navigate('/');
     }

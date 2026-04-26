@@ -52,7 +52,7 @@ members.get('/members/:memberId', async (c) => {
     if (!doc || !doc.name) return c.json({ error: 'Member not found' }, 404);
     
     const memberData = db.firestoreToJson(doc);
-    const sanitizedMember = { ...memberData, id: memberId };
+    const sanitizedMember = { ...memberData, id: memberId, hasPassword: !!memberData.password };
     delete sanitizedMember.password;
     delete sanitizedMember.deleteToken;
     return c.json(sanitizedMember, 200);
@@ -92,7 +92,9 @@ members.post('/members/:memberId/set-password', async (c) => {
     const memberId = c.req.param('memberId');
     const { groupId, password } = await c.req.json();
     const token = c.req.header('x-auth-token');
-    if (!groupId || !token || !password) return c.json({ error: 'Missing info' }, 400);
+    if (!groupId) return c.json({ error: 'Missing groupId' }, 400);
+    if (!token) return c.json({ error: 'Missing token' }, 400);
+    if (password === undefined) return c.json({ error: 'Missing password' }, 400);
 
     const db = new FirestoreClient(c.env.FIREBASE_SERVICE_ACCOUNT);
     const doc = await db.getDocument(`groups/${groupId}/members/${memberId}`);
@@ -101,9 +103,9 @@ members.post('/members/:memberId/set-password', async (c) => {
     const memberData = db.firestoreToJson(doc);
     if (memberData.deleteToken !== token) return c.json({ error: 'Unauthorized' }, 403);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await db.patchDocument(`groups/${groupId}/members/${memberId}`, { password: hashedPassword });
-    return c.json({ message: 'Password set' }, 200);
+    const passwordPayload = password ? await bcrypt.hash(password, 10) : null;
+    await db.patchDocument(`groups/${groupId}/members/${memberId}`, { password: passwordPayload });
+    return c.json({ message: password ? 'Password set' : 'Password deleted' }, 200);
   } catch (error) {
     return c.json({ error: 'Error setting password' }, 500);
   }

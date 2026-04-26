@@ -17,10 +17,8 @@
           const groupId = state.currentGroupId || (state.currentUser && state.currentUser.lastUsedGroupId);
           if (groupId) {
             baseUrl = urlBuilder(groupId);
-          } else if (targetView === 'eventEditView') {
-            baseUrl = viewToUrlMap['groupDashboard'];
           } else {
-            baseUrl = '/admin/groups';
+            return '#NO_GROUP';
           }
         } else {
           baseUrl = urlBuilder;

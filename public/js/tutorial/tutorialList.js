@@ -76,12 +76,17 @@
 
         if (link) {
           e.preventDefault();
+          const href = link.getAttribute('href');
+          if (href === '#NO_GROUP') {
+            ui.showToast('このチュートリアルを開始するには、グループが必要です。先にグループを作成して選択してください。');
+            return;
+          }
           // このページからチュートリアルを開始する際に、戻り先URLを保存する
           if (window.tutorialManager) {
             window.tutorialManager.setReturnUrl(window.location.pathname);
           }
           setTimeout(() => {
-            router.navigateTo(link.getAttribute('href'));
+            router.navigateTo(href);
           }, 0);
         } else if (button) {
           setTimeout(() => {

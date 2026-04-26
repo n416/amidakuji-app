@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import * as api from '../lib/api';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { setCurrentLotteryData, setPrizes as setReduxPrizes } from '../store/lotterySlice';
+import { setCurrentGroupPrizeMasters } from '../store/adminSlice';
 // @ts-ignore
-import * as state from '../lib/state.js';
-// @ts-ignore
-import { prepareStepAnimation } from '../lib/animation.js';
+import { prepareStepAnimation, setAnimatorState } from '../lib/animation.js';
 import { X, Users, RefreshCw, Gift, ArrowLeft, Plus, Star, Trash2, ArrowRight, ImagePlus, Grid, List } from 'lucide-react';
 import { CustomConfirmModal } from '../components/CustomConfirmModal';
 import { ImageCropperModal } from '../components/ImageCropperModal';
@@ -12,6 +14,9 @@ import { ImageCropperModal } from '../components/ImageCropperModal';
 export const EventEditView: React.FC = () => {
   const { eventId, groupId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const lotteryState = useSelector((state: RootState) => state.lottery);
+  const prizeMasters = useSelector((state: RootState) => state.admin.currentGroupPrizeMasters);
   
   const [eventName, setEventName] = useState('');
   const [prizes, setPrizes] = useState<any[]>([]);
@@ -40,7 +45,6 @@ export const EventEditView: React.FC = () => {
   const [unjoinedMembers, setUnjoinedMembers] = useState<any[]>([]);
   const [selectedMembers, setSelectedMembers] = useState<any[]>([]);
   const [fillSlotsStep, setFillSlotsStep] = useState(1);
-  const [prizeMasters, setPrizeMasters] = useState<any[]>([]);
   const [selectedMaster, setSelectedMaster] = useState<any | null>(null);
 
   const [confirmModalConfig, setConfirmModalConfig] = useState<{message: string, options: string[], callback: (opt: string | null) => void} | null>(null);
@@ -69,8 +73,9 @@ export const EventEditView: React.FC = () => {
           setDisplayPrizeName(data.displayPrizeName ?? true);
           setDisplayPrizeCount(data.displayPrizeCount ?? true);
           setAllowDoodleMode(data.allowDoodleMode || false);
-          state.setCurrentLotteryData(data);
-          state.setPrizes(data.prizes || []);
+          dispatch(setCurrentLotteryData(data));
+          setAnimatorState({ lotteryData: data });
+          dispatch(setReduxPrizes(data.prizes || []));
         } catch (e) {
           console.error(e);
           showToast('イベントの読み込みに失敗しました');
@@ -84,7 +89,8 @@ export const EventEditView: React.FC = () => {
     if (!isNewEvent && eventData && canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
-        state.setCurrentLotteryData(eventData);
+        dispatch(setCurrentLotteryData(eventData));
+        setAnimatorState({ lotteryData: eventData });
         prepareStepAnimation(ctx, true, false, true);
       }
     }
@@ -157,13 +163,13 @@ export const EventEditView: React.FC = () => {
 
   const handlePrizeChange = (index: number, field: string, value: any) => {
     const newPrizes = [...prizes];
-    newPrizes[index][field] = value;
+    newPrizes[index] = { ...newPrizes[index], [field]: value };
     setPrizes(newPrizes);
     setIsDirty(true);
   };
 
   const handleGroupPrizeChange = (originalName: string, field: string, value: any) => {
-    const newPrizes = [...prizes];
+    let newPrizes = [...prizes];
     if (field === 'quantity') {
       const currentCount = newPrizes.filter(p => p.name === originalName).length;
       const targetCount = parseInt(value, 10) || 0;
@@ -183,10 +189,11 @@ export const EventEditView: React.FC = () => {
         }
       }
     } else {
-      newPrizes.forEach(p => {
+      newPrizes = newPrizes.map(p => {
         if (p.name === originalName) {
-          p[field] = value;
+          return { ...p, [field]: value };
         }
+        return p;
       });
     }
     setPrizes(newPrizes);
@@ -219,8 +226,17 @@ export const EventEditView: React.FC = () => {
     setNewPrizeName('');
     setNewPrizeRank('uncommon');
     setNewPrizeFile(null);
+    setNewPrizeImageUrl(null);
     setShowAddPrizeModal(false);
     setIsDirty(true);
+  };
+
+  const closeAddPrizeModal = () => {
+    setNewPrizeName('');
+    setNewPrizeRank('uncommon');
+    setNewPrizeFile(null);
+    setNewPrizeImageUrl(null);
+    setShowAddPrizeModal(false);
   };
 
   const handleBulkPrizeUpdate = () => {
@@ -271,7 +287,7 @@ export const EventEditView: React.FC = () => {
 
   const handleRegenerateLines = async () => {
     if (!currentEventId) return;
-    const doodlesExist = state.currentLotteryData?.doodles?.length > 0;
+    const doodlesExist = eventData?.doodles?.length > 0;
     let deleteDoodles = false;
     if (doodlesExist) {
       const opt = await showCustomConfirm(
@@ -288,9 +304,13 @@ export const EventEditView: React.FC = () => {
 
     try {
       const result = await api.regenerateLines(currentEventId, deleteDoodles);
-      state.currentLotteryData.lines = result.lines;
-      state.currentLotteryData.results = result.results;
-      if (deleteDoodles) state.currentLotteryData.doodles = [];
+      const updatedEventData = { ...eventData };
+      updatedEventData.lines = result.lines;
+      updatedEventData.results = result.results;
+      if (deleteDoodles) updatedEventData.doodles = [];
+      setEventData(updatedEventData);
+      dispatch(setCurrentLotteryData(updatedEventData));
+      
       const ctx = canvasRef.current?.getContext('2d');
       if (ctx) prepareStepAnimation(ctx, true, false, true);
       showToast('あみだくじを再生成しました。');
@@ -392,7 +412,7 @@ export const EventEditView: React.FC = () => {
           <h4>2. 景品</h4>
           <div className="prize-controls-header">
             <div className="input-group prize-main-controls">
-              <button className="primary-action" onClick={() => setShowAddPrizeModal(true)} disabled={isStarted}><Plus size={16}/> 追加</button>
+              <button id="openAddPrizeModalButton" className="primary-action" onClick={() => setShowAddPrizeModal(true)} disabled={isStarted}><Plus size={16}/> 追加</button>
               <button onClick={() => { setBulkPrizeText(prizes.map((p) => p.name).join('\n')); setShowBulkAddModal(true); }} disabled={isStarted}>テキスト流し込みで追加</button>
               <button onClick={handleShufflePrizes} disabled={isStarted}><RefreshCw size={16}/> ランダム並び替え</button>
               <button onClick={() => setShowSummaryModal(true)}>集計</button>
@@ -532,8 +552,8 @@ export const EventEditView: React.FC = () => {
         </div>
 
         {isNewEvent ? (
-          <div className="settings-section">
-            <button className="primary-action" onClick={handleSave} disabled={saving}>この内容でイベントを作成</button>
+          <div id="createEventButtonContainer" className="settings-section">
+            <button id="createEventButton" className="primary-action" onClick={handleSave} disabled={saving}>この内容でイベントを作成</button>
           </div>
         ) : (
           <div className="settings-section">
@@ -541,14 +561,14 @@ export const EventEditView: React.FC = () => {
             <div className="final-prep-content-wrapper" style={{position: 'relative'}}>
               {isDirty && (
                 <div className="final-prep-overlay">
-                  <button className="primary-action" onClick={handleSave} disabled={saving}>変更を保存してプレビューを更新</button>
+                  <button id="saveForPreviewButton" className="primary-action" onClick={handleSave} disabled={saving}>変更を保存してプレビューを更新</button>
                 </div>
               )}
               <p>あみだくじを生成・プレビューし、必要に応じて調整します。</p>
               <div className="input-group" style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
-                <button onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
-                <button onClick={handleRegenerateLines} disabled={isStarted}><RefreshCw size={16}/> 線を再生成</button>
-                <button onClick={async () => {
+                <button id="showFillSlotsModalButton" onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
+                <button id="regenerateLinesButton" onClick={handleRegenerateLines} disabled={isStarted}><RefreshCw size={16}/> 線を再生成</button>
+                <button id="shufflePrizesBroadcastButton" onClick={async () => {
                   const opt = await showCustomConfirm('景品をシャッフルしますか？', ['シャッフルする']);
                   if (!opt) return;
                   try {
@@ -569,7 +589,7 @@ export const EventEditView: React.FC = () => {
             </div>
 
             <div style={{marginTop: '20px', textAlign: 'center'}}>
-              <Link to={`/admin/event/${currentEventId}/broadcast`} className="primary-action" style={{display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none'}}>
+              <Link id="goToBroadcastViewButton" to={`/admin/event/${currentEventId}/broadcast`} className="primary-action" style={{display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none'}}>
                 配信画面へ進む <ArrowRight size={16}/>
               </Link>
             </div>
@@ -580,7 +600,7 @@ export const EventEditView: React.FC = () => {
       {showAddPrizeModal && (
         <div id="addPrizeModal" className="modal" style={{display: 'block'}}>
           <div className="modal-content">
-            <span className="close-button" onClick={() => setShowAddPrizeModal(false)}><X /></span>
+            <span className="close-button" onClick={closeAddPrizeModal}><X /></span>
             <h3>景品の追加</h3>
             <div className="input-group">
               <label>景品名:</label>
@@ -609,7 +629,7 @@ export const EventEditView: React.FC = () => {
               <button id="callMasterButton" className="secondary-btn action-left" onClick={async () => {
                 try {
                   const masters = await api.getPrizeMasters(groupId || eventData?.groupId);
-                  setPrizeMasters(masters);
+                  dispatch(setCurrentGroupPrizeMasters(masters));
                   setShowPrizeMasterSelectModal(true);
                 } catch(e) { showToast('マスター取得に失敗'); }
               }}>マスターから呼び出し</button>

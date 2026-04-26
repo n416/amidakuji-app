@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { setCurrentGroupMembers } from '../store/adminSlice';
 import * as api from '../lib/api';
 
 export const MemberManagementView: React.FC = () => {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(true);
-  const [members, setMembers] = useState<any[]>([]);
+  const members = useSelector((state: RootState) => state.admin.currentGroupMembers);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals state
@@ -35,7 +39,7 @@ export const MemberManagementView: React.FC = () => {
     try {
       if (groupId) {
         const data = await api.getMembers(groupId);
-        setMembers(data);
+        dispatch(setCurrentGroupMembers(data));
       }
     } catch (e) {
       console.error(e);
@@ -86,7 +90,8 @@ export const MemberManagementView: React.FC = () => {
   const handleToggleActive = async (memberId: string, isActive: boolean) => {
     try {
       await api.updateMemberStatus(groupId!, memberId, isActive);
-      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, isActive } : m));
+      const updatedMembers = members.map((m: any) => m.id === memberId ? { ...m, isActive } : m);
+      dispatch(setCurrentGroupMembers(updatedMembers));
     } catch (e) {
       setToastMessage('状態の更新に失敗しました。');
     }
@@ -117,17 +122,12 @@ export const MemberManagementView: React.FC = () => {
   const executeDeletePassword = async () => {
     if (!confirmDeletePassword) return;
     try {
-      const res = await fetch(`/api/admin/members/${confirmDeletePassword.memberId}/delete-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId })
-      });
-      if (!res.ok) throw new Error('削除に失敗しました');
+      await api.approvePasswordReset(confirmDeletePassword.memberId, groupId!);
       setToastMessage('合言葉を削除しました。');
       setConfirmDeletePassword(null);
       fetchMembers();
     } catch (e: any) {
-      setToastMessage(e.message || '合言葉の削除に失敗しました。');
+      setToastMessage(e.message || e.error || '合言葉の削除に失敗しました。');
       setConfirmDeletePassword(null);
     }
   };
@@ -204,7 +204,7 @@ export const MemberManagementView: React.FC = () => {
   if (loading) return <div>読み込み中...</div>;
 
   return (
-    <div className="view-container">
+    <div id="memberManagementView" className="view-container">
       <div className="event-header">
         <button onClick={() => navigate(`/admin/groups/${groupId}`)}>
           <i data-lucide="arrow-left"></i> ダッシュボードに戻る
@@ -222,7 +222,7 @@ export const MemberManagementView: React.FC = () => {
             onChange={e => setSearchQuery(e.target.value)}
           />
           <button className="primary-action" onClick={() => { setAddMemberNameInput(''); setShowAddMemberModal(true); }}><i data-lucide="plus"></i> メンバー追加</button>
-          <button onClick={() => { setBulkInput(''); setBulkStep(1); setShowBulkModal(true); }}>一括登録</button>
+          <button id="bulkRegisterButton" onClick={() => { setBulkInput(''); setBulkStep(1); setShowBulkModal(true); }}>一括登録</button>
           <button className="secondary-btn" onClick={handleCleanupEvents} style={{ display: 'none' }}>過去データ修正</button>
         </div>
       </div>
@@ -283,9 +283,9 @@ export const MemberManagementView: React.FC = () => {
             {bulkStep === 1 ? (
               <div>
                 <label>登録したいメンバーの名前を、改行・スペース・カンマ区切りでテキストエリアに貼り付けてください。</label>
-                <textarea rows={10} value={bulkInput} onChange={e => setBulkInput(e.target.value)} placeholder="佐藤 太郎, 鈴木 一郎, ..."></textarea>
+                <textarea id="bulkNamesTextarea" rows={10} value={bulkInput} onChange={e => setBulkInput(e.target.value)} placeholder="佐藤 太郎, 鈴木 一郎, ..."></textarea>
                 <div className="modal-actions">
-                  <button className="primary-action" onClick={handleAnalyzeBulk} disabled={bulkAnalyzing}>
+                  <button id="analyzeBulkButton" className="primary-action" onClick={handleAnalyzeBulk} disabled={bulkAnalyzing}>
                     {bulkAnalyzing ? '分析中...' : '確認する'}
                   </button>
                 </div>
@@ -319,7 +319,7 @@ export const MemberManagementView: React.FC = () => {
                 </div>
 
                 <div className="modal-actions">
-                  <button className="primary-action" onClick={handleFinalizeBulk} disabled={bulkRegistering}>
+                  <button id="finalizeBulkButton" className="primary-action" onClick={handleFinalizeBulk} disabled={bulkRegistering}>
                     {bulkRegistering ? '登録処理中...' : 'この内容で登録を実行する'}
                   </button>
                 </div>

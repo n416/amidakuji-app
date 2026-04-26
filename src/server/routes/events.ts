@@ -266,13 +266,28 @@ events.put('/events/:eventId', requireAuth, async (c) => {
     };
 
     if (participantCount !== eventData.participantCount) {
-      const newParticipants = Array.from({length: participantCount}, (_, i) => ({
-        slot: i,
-        name: null,
-        deleteToken: null,
-      }));
+      const currentParticipants = eventData.participants || [];
+      const newParticipants = Array.from({length: participantCount}, (_, i) => {
+        if (i < currentParticipants.length) {
+          return currentParticipants[i];
+        } else {
+          return {
+            slot: i,
+            name: null,
+            deleteToken: null,
+            memberId: null,
+            iconUrl: null,
+            color: null
+          };
+        }
+      });
       updateData.participants = newParticipants;
-      updateData.lines = generateLines(participantCount, eventData.doodles || []);
+      
+      const validDoodles = (eventData.doodles || []).filter((d: any) => 
+        d.fromIndex < participantCount - 1 && d.toIndex < participantCount
+      );
+      updateData.doodles = validDoodles;
+      updateData.lines = generateLines(participantCount, validDoodles);
     }
 
     await db.patchDocument(`events/${eventId}`, updateData);

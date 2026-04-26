@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../store';
+import { setParticipantSession, clearParticipantSession } from '../store/participantSlice';
+import { setCurrentGroupId, setCurrentLotteryData } from '../store/lotterySlice';
+import { ArrowLeft, PartyPopper, Hand, Pencil, Eraser, Gift, Lock, X } from 'lucide-react';
 // @ts-ignore
-import * as state from '../lib/state.js';
-
-import { ArrowLeft, PartyPopper, Hand, Pencil, Eraser, Gift, Lock } from 'lucide-react';
-// @ts-ignore
-import { prepareStepAnimation, startAnimation, clearAnimationState, isAnimationRunning } from '../lib/animation.js';
+import { prepareStepAnimation, startAnimation, clearAnimationState, isAnimationRunning, setAnimatorState } from '../lib/animation.js';
 // @ts-ignore
 import { participantPanzoom, resetParticipantPanzoom } from '../lib/animation/setup.js';
 // @ts-ignore
@@ -17,6 +18,9 @@ import { drawLotteryBase, drawDoodleHoverPreview, drawDoodlePreview } from '../l
 export const ParticipantView: React.FC = () => {
   const { eventId, customUrl, participantName } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const participantSession = useSelector((state: RootState) => state.participant);
+  const currentUser = useSelector((state: RootState) => state.auth.user);
 
   const [phase, setPhase] = useState<'nameEntry' | 'join' | 'staticAmida' | 'result' | 'passwordEntry'>('nameEntry');
   const [eventData, setEventData] = useState<any>(null);
@@ -42,6 +46,16 @@ export const ParticipantView: React.FC = () => {
   const [isAnimationFinished, setIsAnimationFinished] = useState(false);
   const [showAllTracers, setShowAllTracers] = useState(false);
 
+  // Participant login state
+  const [showMemberPasswordModal, setShowMemberPasswordModal] = useState(false);
+  const [memberPasswordInput, setMemberPasswordInput] = useState('');
+  const [pendingLoginId, setPendingLoginId] = useState('');
+  const [pendingLoginName, setPendingLoginName] = useState('');
+
+  // Share fallback state
+  const [shareFallbackUrl, setShareFallbackUrl] = useState('');
+
+  // Modal and toast
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showConfirmModal, setShowConfirmModal] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => {} });
 
@@ -69,34 +83,33 @@ export const ParticipantView: React.FC = () => {
         if (isShare) {
           data = await api.getPublicShareData(actualEventId!, participantName);
         } else if (customUrl) {
-          // fetch event by custom url
-          data = await api.getPublicEventData(customUrl); // fallback if customUrl used
+          data = await api.getPublicEventData(customUrl, participantSession.memberId, participantSession.token);
         } else {
-          data = await api.getPublicEventData(actualEventId!);
+          data = await api.getPublicEventData(actualEventId!, participantSession.memberId, participantSession.token);
         }
         
         setEventData(data);
-        state.setCurrentLotteryData(data);
-        state.setCurrentGroupId(data.groupId);
+        dispatch(setCurrentLotteryData(data));
+        dispatch(setCurrentGroupId(data.groupId));
+        setAnimatorState({ lotteryData: data });
         
         if (data.status === 'started' && data.results) {
-          state.setRevealedPrizes([]);
+          setAnimatorState({ revealedPrizes: [] });
         } else {
-          state.setRevealedPrizes([]);
+          setAnimatorState({ revealedPrizes: [] });
         }
 
-        state.loadParticipantState();
         if (isShare) {
           if (data.status === 'started') {
             setPhase('result');
           } else {
             setPhase('staticAmida');
           }
-        } else if (state.currentParticipantId && state.currentParticipantToken) {
-          setMyMemberId(state.currentParticipantId);
-          setMyName(state.currentParticipantName);
+        } else if (participantSession.memberId && participantSession.token && participantSession.groupId === data.groupId) {
+          setMyMemberId(participantSession.memberId);
+          setMyName(participantSession.name || '');
           
-          const participation = data.participants.find((p: any) => p.memberId === state.currentParticipantId);
+          const participation = data.participants.find((p: any) => p.memberId === participantSession.memberId);
           
           if (data.status === 'started') {
             setPhase('result');
@@ -123,7 +136,8 @@ export const ParticipantView: React.FC = () => {
                 }
                 
                 if (updatedData.doodles && JSON.stringify(prev?.doodles) !== JSON.stringify(updatedData.doodles)) {
-                  state.setCurrentLotteryData(updatedData);
+                  dispatch(setCurrentLotteryData(updatedData));
+                  setAnimatorState({ lotteryData: updatedData });
                   if (staticCanvasRef.current) {
                     const ctx = staticCanvasRef.current.getContext('2d');
                     const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
@@ -159,7 +173,8 @@ export const ParticipantView: React.FC = () => {
   useEffect(() => {
     const redrawStaticAmida = () => {
       if (phase === 'staticAmida' && staticCanvasRef.current && eventData) {
-        state.setCurrentLotteryData(eventData);
+        dispatch(setCurrentLotteryData(eventData));
+        setAnimatorState({ lotteryData: eventData });
         const ctx = staticCanvasRef.current.getContext('2d');
         if (ctx) {
           const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
@@ -179,7 +194,8 @@ export const ParticipantView: React.FC = () => {
 
     const redrawResultAmida = () => {
       if (phase === 'result' && resultCanvasRef.current && eventData) {
-        state.setCurrentLotteryData(eventData);
+        dispatch(setCurrentLotteryData(eventData));
+        setAnimatorState({ lotteryData: eventData });
         const ctx = resultCanvasRef.current.getContext('2d');
         if (ctx) {
           const participation = eventData.participants.find((p: any) => p.memberId === myMemberId);
@@ -416,7 +432,7 @@ export const ParticipantView: React.FC = () => {
       
       setPreviewDoodle(doodleData);
       try {
-        await api.addDoodle(actualEventId!, myMemberId, doodleData);
+        await api.addDoodle(actualEventId!, myMemberId, doodleData, participantSession.token!);
         setPreviewDoodle(null);
       } catch (err: any) {
         if (err.error === '他の線に近すぎるため、線を引けません。') {
@@ -430,7 +446,7 @@ export const ParticipantView: React.FC = () => {
       const myDoodle = eventData.doodles?.find((d: any) => d.memberId === myMemberId);
       if (!myDoodle) return;
       try {
-        await api.deleteDoodle(actualEventId!, myMemberId);
+        await api.deleteDoodle(actualEventId!, myMemberId, participantSession.token!);
         setPreviewDoodle(null);
       } catch (err: any) {
         showToast(err.error || '線の削除に失敗しました。');
@@ -454,20 +470,19 @@ export const ParticipantView: React.FC = () => {
         if (isShare) {
           data = await api.getPublicShareData(actualEventId!, participantName);
         } else {
-          data = await api.getPublicEventData(actualEventId!);
+          data = await api.getPublicEventData(actualEventId!, participantSession.memberId, participantSession.token);
         }
         setEventData(data);
-        state.setCurrentLotteryData(data);
-        state.setCurrentGroupId(data.groupId);
-        state.setRevealedPrizes([]);
-        state.loadParticipantState();
+        dispatch(setCurrentLotteryData(data));
+        setAnimatorState({ lotteryData: data, revealedPrizes: [] });
+        dispatch(setCurrentGroupId(data.groupId));
 
         if (isShare) {
           setPhase(data.status === 'started' ? 'result' : 'staticAmida');
-        } else if (state.currentParticipantId && state.currentParticipantToken) {
-          setMyMemberId(state.currentParticipantId);
-          setMyName(state.currentParticipantName);
-          const participation = data.participants.find((p: any) => p.memberId === state.currentParticipantId);
+        } else if (participantSession.memberId && participantSession.token && participantSession.groupId === data.groupId) {
+          setMyMemberId(participantSession.memberId);
+          setMyName(participantSession.name || '');
+          const participation = data.participants.find((p: any) => p.memberId === participantSession.memberId);
           if (data.status === 'started') {
             setPhase('result');
           } else if (participation) {
@@ -495,7 +510,7 @@ export const ParticipantView: React.FC = () => {
     
     try {
       const res = await api.joinEvent(actualEventId!, nameInput.trim());
-      state.saveParticipantState(res.token, res.memberId, nameInput.trim());
+      dispatch(setParticipantSession({ token: res.token, memberId: res.memberId, name: nameInput.trim(), groupId: eventData.groupId }));
       setMyMemberId(res.memberId);
       setMyName(nameInput.trim());
       
@@ -509,22 +524,31 @@ export const ParticipantView: React.FC = () => {
       }
     } catch (err: any) {
       if (err.requiresPassword) {
-        const pwd = prompt('合言葉を入力してください:');
-        if (pwd) {
-          try {
-            const res2 = await api.verifyPasswordAndJoin(actualEventId!, err.memberId, pwd);
-            state.saveParticipantState(res2.token, res2.memberId, nameInput.trim());
-            setMyMemberId(res2.memberId);
-            setMyName(nameInput.trim());
-            const updatedParticipation = eventData.participants.find((p: any) => p.memberId === res2.memberId);
-            setPhase(eventData.status === 'started' ? 'result' : (updatedParticipation ? 'staticAmida' : 'join'));
-          } catch (err2: any) {
-            setLoginError('合言葉が違います');
-          }
-        }
+        setPendingLoginId(err.memberId);
+        setPendingLoginName(nameInput.trim());
+        setShowMemberPasswordModal(true);
       } else {
         setLoginError(err.error || 'ログインに失敗しました');
       }
+    }
+  };
+
+  const handleMemberLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingLoginId || !actualEventId) return;
+    try {
+      const res2 = await api.verifyPasswordAndJoin(actualEventId, pendingLoginId, memberPasswordInput);
+      dispatch(setParticipantSession({ token: res2.token, memberId: res2.memberId, name: pendingLoginName, groupId: eventData.groupId }));
+      setMyMemberId(res2.memberId);
+      setMyName(pendingLoginName);
+      const updatedParticipation = eventData.participants.find((p: any) => p.memberId === res2.memberId);
+      setPhase(eventData.status === 'started' ? 'result' : (updatedParticipation ? 'staticAmida' : 'join'));
+      setShowMemberPasswordModal(false);
+      setMemberPasswordInput('');
+    } catch (err2: any) {
+      setLoginError('合言葉が違います');
+      setShowMemberPasswordModal(false);
+      setMemberPasswordInput('');
     }
   };
 
@@ -534,7 +558,7 @@ export const ParticipantView: React.FC = () => {
     confirmAction(`参加枠 ${selectedSlot + 1} で参加しますか？`, async () => {
       setLoading(true);
       try {
-        await api.joinSlot(actualEventId!, myMemberId, state.currentParticipantToken, selectedSlot);
+        await api.joinSlot(actualEventId!, myMemberId, participantSession.token!, selectedSlot);
         setPhase('staticAmida');
       } catch (err: any) {
         showToast(err.error || '参加に失敗しました');
@@ -677,7 +701,7 @@ export const ParticipantView: React.FC = () => {
               <button className="delete-btn" onClick={async () => {
                 confirmAction('参加枠を変更しますか？', async () => {
                   try {
-                    await api.deleteParticipant(actualEventId!, state.currentParticipantToken);
+                    await api.deleteParticipant(actualEventId!, participantSession.token!);
                     setPhase('join');
                     setSelectedSlot(null);
                     showToast('参加枠を解除しました。新しい枠を選んでください。');
@@ -712,7 +736,7 @@ export const ParticipantView: React.FC = () => {
                    return !isShare && !isAcknowledged ? (
                      <button className="primary-action" onClick={async () => {
                         try {
-                          await api.acknowledgeResult(actualEventId!, myMemberId!, state.currentParticipantToken);
+                          await api.acknowledgeResult(actualEventId!, myMemberId!, participantSession.token!);
                           showToast('結果を受け取りました！');
                           setEventData({
                             ...eventData,
@@ -734,7 +758,7 @@ export const ParticipantView: React.FC = () => {
                      const shareUrl = `${window.location.origin}/share/${actualEventId}/${encodeURIComponent(participation?.name || '')}`;
                      navigator.clipboard.writeText(shareUrl)
                        .then(() => showToast('クリップボードにシェア用URLをコピーしました！'))
-                       .catch(() => prompt('このURLをコピーしてシェアしてください:', shareUrl));
+                       .catch(() => setShareFallbackUrl(shareUrl));
                   }}>
                      結果をシェアする
                   </button>
@@ -743,7 +767,7 @@ export const ParticipantView: React.FC = () => {
                 {!isShare && (
                   <button className="secondary-btn" onClick={async () => {
                     try {
-                      const group = await api.getGroup(state.currentGroupId!);
+                      const group = await api.getGroup(participantSession.groupId!);
                       if (group) {
                         window.location.href = group.customUrl ? `/g/${group.customUrl}/dashboard` : `/groups/${group.id}/dashboard`;
                       } else {
@@ -812,6 +836,55 @@ export const ParticipantView: React.FC = () => {
             <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
               <button className="secondary-btn" onClick={() => setShowConfirmModal({...showConfirmModal, isOpen: false})}>キャンセル</button>
               <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* メンバーログイン用合言葉入力モーダル */}
+      {showMemberPasswordModal && (
+        <div className="modal" style={{display: 'block', zIndex: 10000}}>
+          <div className="modal-content" style={{maxWidth: '400px'}}>
+            <span className="close-button" onClick={() => setShowMemberPasswordModal(false)}>
+              <X size={24} />
+            </span>
+            <h3 style={{textAlign: 'center'}}>本人確認</h3>
+            <p style={{textAlign: 'center'}}><strong>{pendingLoginName}</strong> さんの合言葉を入力してください。</p>
+            <form onSubmit={handleMemberLoginSubmit} className="input-group">
+              <input
+                type="password"
+                placeholder="合言葉を入力"
+                value={memberPasswordInput}
+                onChange={(e) => setMemberPasswordInput(e.target.value)}
+                autoFocus
+              />
+              <div className="modal-actions" style={{justifyContent: 'center', marginTop: '15px'}}>
+                <button type="submit" className="primary-action" disabled={!memberPasswordInput}>ログイン</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* シェア用URLフォールバック表示モーダル */}
+      {shareFallbackUrl && (
+        <div className="modal" style={{display: 'block', zIndex: 10000}}>
+          <div className="modal-content" style={{maxWidth: '500px', textAlign: 'center'}}>
+            <span className="close-button" onClick={() => setShareFallbackUrl('')}>
+              <X size={24} />
+            </span>
+            <h3>URLをコピーしてください</h3>
+            <p>ブラウザの制限により自動コピーに失敗しました。<br/>以下のURLを選択してコピーしてください。</p>
+            <div className="input-group" style={{marginTop: '15px'}}>
+              <textarea
+                readOnly
+                value={shareFallbackUrl}
+                style={{width: '100%', minHeight: '80px', padding: '10px', fontSize: '14px', resize: 'none'}}
+                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+              />
+            </div>
+            <div className="modal-actions" style={{justifyContent: 'center', marginTop: '15px'}}>
+              <button className="primary-action" onClick={() => setShareFallbackUrl('')}>閉じる</button>
             </div>
           </div>
         </div>

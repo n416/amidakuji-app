@@ -25,7 +25,7 @@
   window.runTutorials = async function () {
     if (!isInitialized) return;
 
-    const activeView = document.querySelector('.view-container[style*="display: block"]');
+    const activeView = document.querySelector('.view-container');
     const currentViewId = activeView ? activeView.id : null;
 
     // ダイアログ表示中にビューが変わったら、強制的にダイアログを閉じて状態をリセット
@@ -276,7 +276,7 @@
 
   function showDialog(story, subStep, currentViewId) {
     return new Promise(async (resolve, reject) => {
-      const activeView = document.querySelector('.view-container[style*="display: block"]');
+      const activeView = document.querySelector('.view-container');
       if (!activeView || activeView.id !== activeTutorialState.activeViewId) {
         reject(new Error(`View changed from "${activeTutorialState.activeViewId}" to "${activeView ? activeView.id : 'null'}". Aborting.`));
         return;

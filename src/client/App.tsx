@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { store } from './store';
 import { Header } from './components/Header';
 import { LandingView } from './views/LandingView';
 import { DashboardView } from './views/DashboardView';
@@ -17,6 +18,16 @@ import { SettingsPanel } from './components/SettingsPanel';
 
 const App: React.FC = () => {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [toastMessage, setToastMessage] = useState('');
+  const [confirmState, setConfirmState] = useState<{isOpen: boolean, message: string, resolve: (v: boolean) => void} | null>(null);
+
+  const showToast = (msg: string, duration = 3000) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), duration);
+  };
 
   useEffect(() => {
     const initApp = async () => {
@@ -42,6 +53,48 @@ const App: React.FC = () => {
     };
     initApp();
   }, []);
+
+  useEffect(() => {
+    // @ts-ignore
+    if (window.tutorialManager && !window.tutorialManagerInitialized) {
+      // @ts-ignore
+      window.tutorialManager.init({
+        state: {
+          get currentGroupId() { 
+            const st = store.getState();
+            return st.lottery.currentGroupId || st.admin.currentGroup?.id || localStorage.getItem('lastUsedGroupId'); 
+          },
+          get currentUser() { return store.getState().auth.user; }
+        },
+        router: {
+          navigateTo: (url: string) => navigate(url),
+          removeQueryParam: (param: string) => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete(param);
+            window.history.replaceState({}, '', url.toString());
+          }
+        },
+        ui: {
+          showToast,
+          showCustomConfirm: (msg: string) => new Promise((resolve) => {
+             setConfirmState({ isOpen: true, message: msg, resolve });
+          })
+        }
+      });
+      // @ts-ignore
+      window.tutorialManagerInitialized = true;
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    // @ts-ignore
+    if (typeof window.runTutorials === 'function') {
+      setTimeout(() => {
+        // @ts-ignore
+        window.runTutorials();
+      }, 500); // Wait for view to render
+    }
+  }, [location.pathname, location.search]);
 
   if (!isFirebaseReady) {
     return (
@@ -81,6 +134,23 @@ const App: React.FC = () => {
       <Route path="/tutorials" element={<TutorialListView />} />
     </Routes>
     </div>
+
+    {toastMessage && (
+      <div className="toast active" style={{zIndex: 10001}}>{toastMessage}</div>
+    )}
+
+    {confirmState?.isOpen && (
+      <div className="modal" style={{display: 'block', zIndex: 10000}}>
+        <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+          <h3>確認</h3>
+          <p style={{whiteSpace: 'pre-wrap'}}>{confirmState.message}</p>
+          <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+            <button className="secondary-btn" onClick={() => { setConfirmState(null); confirmState.resolve(false); }}>キャンセル</button>
+            <button className="primary-action" onClick={() => { setConfirmState(null); confirmState.resolve(true); }}>OK</button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 };
