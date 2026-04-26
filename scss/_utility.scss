@@ -121,45 +121,39 @@
   border-radius: 4px;
   border: 1px solid var(--border-color);
 }
-/* ▼▼▼ この .toast-notification ルール全体を修正してください ▼▼▼ */
+/* トースト通知 */
 .toast-notification {
   position: fixed;
-  z-index: 9999;
-  /* 画面中央に配置するためのスタイル */
+  z-index: 99999;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%) translateY(20px); /* 初期位置を少し下に */
-  /* 見た目の調整 */
-  background-color: rgba(30, 30, 30, 0.9); /* 背景を濃くする */
+  transform: translate(-50%, -50%);
+  background-color: rgba(30, 30, 30, 0.9);
   color: white;
-  padding: 15px 25px; /* 少し余白を広げる */
+  padding: 15px 25px;
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* 影を強調 */
-  opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  pointer-events: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   font-size: 14px;
   text-align: center;
   max-width: 80%;
   min-width: 250px;
+  animation: toastFadeIn 0.3s ease;
 }
 
-.toast-notification.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) translateY(0); /* 中央に表示 */
-}
-
-/* ダークモードのスタイル（デフォルト） */
-.toast-notification {
-  background-color: rgba(30, 30, 30, 0.9);
-  color: white;
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
 }
 
 /* ライトモード用のスタイル */
 body.light-mode .toast-notification {
-  background-color: rgba(255, 255, 255, 0.95); /* 白背景 */
-  color: var(--text-color); /* ダークな文字色 */
-  border: 1px solid var(--border-color); /* 境界線を明確に */
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
 }
-
-/* ▲▲▲ ここまでが修正点です ▲▲▲ */

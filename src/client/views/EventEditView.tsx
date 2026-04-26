@@ -49,8 +49,15 @@ export const EventEditView: React.FC = () => {
   const [cropperCallback, setCropperCallback] = useState<((file: File | null) => void) | null>(null);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const isNewEvent = eventId === 'new';
+  const isNewEvent = !eventId;
   const currentEventId = isNewEvent ? null : eventId;
+
+  // トースト通知
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -67,7 +74,7 @@ export const EventEditView: React.FC = () => {
           state.setPrizes(data.prizes || []);
         } catch (e) {
           console.error(e);
-          alert('イベントの読み込みに失敗しました');
+          showToast('イベントの読み込みに失敗しました');
         }
       }
     };
@@ -131,19 +138,19 @@ export const EventEditView: React.FC = () => {
       };
 
       if (isNewEvent) {
-        const createdId = await api.createEvent(groupId!, finalEventData);
-        alert('イベントを作成しました');
-        navigate(`/admin/event/${createdId}/edit`, { replace: true });
+        const created = await api.createEvent({ ...finalEventData, groupId });
+        showToast('イベントを作成しました');
+        navigate(`/admin/event/${created.id}/edit`, { replace: true });
       } else {
         await api.updateEvent(currentEventId!, finalEventData);
         const updated = await api.getEvent(currentEventId!);
         setEventData(updated);
         setPrizes(updated.prizes || []);
         setIsDirty(false);
-        alert('保存しました');
+        showToast('保存しました');
       }
     } catch (e: any) {
-      alert(e.error || e.message || '保存に失敗しました');
+      showToast(e.error || e.message || '保存に失敗しました');
     } finally {
       setSaving(false);
     }
@@ -250,7 +257,7 @@ export const EventEditView: React.FC = () => {
       setFillSlotsStep(1);
       setShowFillSlotsModal(true);
     } catch (e) {
-      alert('未参加メンバーの取得に失敗しました');
+      showToast('未参加メンバーの取得に失敗しました');
     }
   };
 
@@ -276,7 +283,8 @@ export const EventEditView: React.FC = () => {
       else if (opt === '落書きを残す') deleteDoodles = false;
       else return;
     } else {
-      if (!confirm('あみだくじのパターンを再生成しますか？')) return;
+      const opt = await showCustomConfirm('あみだくじのパターンを再生成しますか？', ['再生成する']);
+      if (!opt) return;
     }
 
     try {
@@ -286,19 +294,19 @@ export const EventEditView: React.FC = () => {
       if (deleteDoodles) state.currentLotteryData.doodles = [];
       const ctx = canvasRef.current?.getContext('2d');
       if (ctx) prepareStepAnimation(ctx, true, false, true);
-      alert('あみだくじを再生成しました。');
+      showToast('あみだくじを再生成しました。');
       
       const updated = await api.getEvent(currentEventId);
       setEventData(updated);
     } catch (e: any) {
-      alert(`エラー: ${e.error || '再生成に失敗しました。'}`);
+      showToast(`エラー: ${e.error || '再生成に失敗しました。'}`);
     }
   };
 
   const handleSelectRandomMembers = () => {
     const emptySlotsCount = eventData?.participants?.filter((p: any) => p.name === null).length || 0;
     if (unjoinedMembers.length < emptySlotsCount) {
-      alert('空き枠に対して、未参加のメンバーが不足しています。全員を割り当てます。');
+      showToast('空き枠に対して、未参加のメンバーが不足しています。全員を割り当てます。');
       setSelectedMembers([...unjoinedMembers]);
     } else {
       const shuffled = [...unjoinedMembers].sort(() => 0.5 - Math.random());
@@ -311,13 +319,13 @@ export const EventEditView: React.FC = () => {
     if (selectedMembers.length === 0) return;
     try {
       await api.fillSlots(currentEventId!, selectedMembers);
-      alert('参加枠を割り当てました');
+      showToast('参加枠を割り当てました');
       setShowFillSlotsModal(false);
       setSelectedMembers([]);
       const updated = await api.getEvent(currentEventId!);
       setEventData(updated);
     } catch (e: any) {
-      alert(e.error || '割り当てに失敗しました');
+      showToast(e.error || '割り当てに失敗しました');
     }
   };
 
@@ -542,14 +550,15 @@ export const EventEditView: React.FC = () => {
                 <button onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
                 <button onClick={handleRegenerateLines} disabled={isStarted}><RefreshCw size={16}/> 線を再生成</button>
                 <button onClick={async () => {
-                  if(!confirm('景品をシャッフルしますか？')) return;
+                  const opt = await showCustomConfirm('景品をシャッフルしますか？', ['シャッフルする']);
+                  if (!opt) return;
                   try {
                     const shuffledPrizes = [...prizes].sort(() => Math.random() - 0.5);
                     await api.shufflePrizes(currentEventId!, shuffledPrizes);
                     const updated = await api.getEvent(currentEventId!);
                     setEventData(updated);
-                    alert('景品をシャッフルしました');
-                  } catch(e: any) { alert(e.error || 'シャッフルに失敗しました'); }
+                    showToast('景品をシャッフルしました');
+                  } catch(e: any) { showToast(e.error || 'シャッフルに失敗しました'); }
                 }} disabled={isStarted}><Gift size={16}/> 景品シャッフル</button>
               </div>
               
@@ -603,7 +612,7 @@ export const EventEditView: React.FC = () => {
                   const masters = await api.getPrizeMasters(groupId || eventData?.groupId);
                   setPrizeMasters(masters);
                   setShowPrizeMasterSelectModal(true);
-                } catch(e) { alert('マスター取得に失敗'); }
+                } catch(e) { showToast('マスター取得に失敗'); }
               }}>マスターから呼び出し</button>
               <button id="addPrizeOkButton" className="primary-action" onClick={addPrize}>追加</button>
             </div>
@@ -757,6 +766,12 @@ export const EventEditView: React.FC = () => {
         />
       )}
 
+      {/* トースト通知 */}
+      {toastMessage && (
+        <div className="toast-notification">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };

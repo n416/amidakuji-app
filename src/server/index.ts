@@ -26,9 +26,9 @@ type Variables = {
 const app = new Hono<{ Bindings: Bindings, Variables: Variables }>();
 
 app.use('*', cors({
-  origin: '*',
+  origin: (origin) => origin || '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-auth-token', 'x-member-id'],
   credentials: true,
 }));
 

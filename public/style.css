@@ -297,10 +297,6 @@ body.dark-mode #adminControls #glimpseButton {
   z-index: 1000;
 }
 
-#content {
-  padding-top: 60px;
-}
-
 .impersonation-banner {
   position: relative;
   background-color: var(--admin-color);
@@ -319,7 +315,7 @@ body.dark-mode #adminControls #glimpseButton {
 }
 
 .main-header {
-  display: flex;
+  display: none;
   justify-content: space-between;
   align-items: center;
   padding: 10px 10px 8px;
@@ -1623,6 +1619,12 @@ input[type=color] {
 
 .cropper-container img {
   max-width: 100%;
+}
+
+.confirm-message {
+  white-space: pre-wrap;
+  margin: 12px 0;
+  line-height: 1.6;
 }
 
 .notification-banner {
@@ -3016,85 +3018,38 @@ body.dark-mode #adminControls #glimpseButton {
   border: 1px solid var(--border-color);
 }
 
-/* ▼▼▼ この .toast-notification ルール全体を修正してください ▼▼▼ */
+/* トースト通知 */
 .toast-notification {
   position: fixed;
-  z-index: 9999;
-  /* 画面中央に配置するためのスタイル */
+  z-index: 99999;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%) translateY(20px); /* 初期位置を少し下に */
-  /* 見た目の調整 */
-  background-color: rgba(30, 30, 30, 0.9); /* 背景を濃くする */
+  transform: translate(-50%, -50%);
+  background-color: rgba(30, 30, 30, 0.9);
   color: white;
-  padding: 15px 25px; /* 少し余白を広げる */
+  padding: 15px 25px;
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* 影を強調 */
-  opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  pointer-events: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
   font-size: 14px;
   text-align: center;
   max-width: 80%;
   min-width: 250px;
+  animation: toastFadeIn 0.3s ease;
 }
 
-.toast-notification.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) translateY(0); /* 中央に表示 */
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) translateY(0);
+  }
 }
-
-/* ダークモードのスタイル（デフォルト） */
-.toast-notification {
-  background-color: rgba(30, 30, 30, 0.9);
-  color: white;
-}
-
 /* ライトモード用のスタイル */
 body.light-mode .toast-notification {
-  background-color: rgba(255, 255, 255, 0.95); /* 白背景 */
-  color: var(--text-color); /* ダークな文字色 */
-  border: 1px solid var(--border-color); /* 境界線を明確に */
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
 }
-
-/* ▲▲▲ ここまでが修正点です ▲▲▲ */
-
-/* ===== 合言葉入力画面 ===== */
-.password-entry-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.password-entry-container .password-icon {
-  color: var(--primary-color);
-  opacity: 0.7;
-}
-
-.password-entry-container h3 {
-  margin: 0;
-  font-size: 1.3em;
-  font-weight: 600;
-}
-
-.password-entry-container p {
-  margin: 0;
-  color: #888;
-  font-size: 0.95em;
-}
-
-.password-entry-container .input-group {
-  width: 100%;
-  max-width: 400px;
-}
-
-.password-entry-container .error-message {
-  color: var(--danger-color);
-  font-size: 0.9em;
-  margin: 0;
-}
-
-/*# sourceMappingURL=style.css.map */
