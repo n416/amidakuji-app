@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// @ts-ignore
-import * as api from '../lib/api.js';
+import * as api from '../lib/api';
 
 export const MemberManagementView: React.FC = () => {
   const { groupId } = useParams();

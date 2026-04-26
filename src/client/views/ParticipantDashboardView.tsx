@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// @ts-ignore
-import * as api from '../lib/api.js';
+import * as api from '../lib/api';
 // @ts-ignore
 import * as state from '../lib/state.js';
 import { LogOut, Trash2, Edit3, Key, PartyPopper, Gift, AlertTriangle, ArrowLeft, ImagePlus, X, Lock } from 'lucide-react';

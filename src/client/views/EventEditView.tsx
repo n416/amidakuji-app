@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-// @ts-ignore
-import * as api from '../lib/api.js';
+import * as api from '../lib/api';
 // @ts-ignore
 import * as state from '../lib/state.js';
 // @ts-ignore

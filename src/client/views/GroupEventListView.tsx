@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// @ts-ignore
-import * as api from '../lib/api.js';
+import * as api from '../lib/api';
 // @ts-ignore
 import * as state from '../lib/state.js'; // ParticipantView(未移行)との状態共有のため一時的に残置
 import { ArrowLeft, X } from 'lucide-react';
@@ -153,8 +152,8 @@ export const GroupEventListView: React.FC = () => {
                 // Cookie設定済みなのでイベント一覧を再取得
                 try {
                   const fetchedEvents = isCustomUrl
-                    ? await api.getEventsByCustomUrl(identifier)
-                    : await api.getPublicEventsForGroup(identifier);
+                    ? await api.getEventsByCustomUrl(identifier!)
+                    : await api.getPublicEventsForGroup(identifier!);
                   setEvents(fetchedEvents);
                   setError(null);
                 } catch (retryErr: any) {

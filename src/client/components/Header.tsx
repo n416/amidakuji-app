@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Home, HelpCircle, ChevronDown, User, LogOut, Trash2, Settings, Plus } from 'lucide-react';
-// @ts-ignore
-import * as api from '../lib/api.js';
+import * as api from '../lib/api';
 import { ParticipantHeader } from './ParticipantHeader';
 
 export const Header: React.FC = () => {
