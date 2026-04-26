@@ -25,6 +25,13 @@ export const MemberManagementView: React.FC = () => {
   const [confirmDeletePassword, setConfirmDeletePassword] = useState<{ memberId: string, name: string } | null>(null);
   const [toastMessage, setToastMessage] = useState('');
 
+  // カスタム確認モーダル
+  const [showConfirmModal, setShowConfirmModal] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => {} });
+
+  // メンバー追加用入力モーダル
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [addMemberNameInput, setAddMemberNameInput] = useState('');
+
   const fetchMembers = async () => {
     try {
       if (groupId) {
@@ -50,26 +57,31 @@ export const MemberManagementView: React.FC = () => {
   }, [toastMessage]);
 
   const handleAddMember = async () => {
-    const name = prompt('追加するメンバーの名前を入力してください:');
-    if (name && name.trim() && groupId) {
-      try {
-        await api.addMember(groupId, name.trim());
-        fetchMembers();
-      } catch (e: any) {
-        alert(e.error || 'メンバーの追加に失敗しました。');
-      }
+    if (!addMemberNameInput.trim() || !groupId) return;
+    try {
+      await api.addMember(groupId, addMemberNameInput.trim());
+      setShowAddMemberModal(false);
+      setAddMemberNameInput('');
+      fetchMembers();
+    } catch (e: any) {
+      setToastMessage(e.error || 'メンバーの追加に失敗しました。');
     }
   };
 
-  const handleDeleteMember = async (memberId: string, name: string) => {
-    if (confirm(`メンバー「${name}」を削除しますか？`)) {
-      try {
-        await api.deleteMember(groupId!, memberId);
-        fetchMembers();
-      } catch (e: any) {
-        alert(e.error || 'メンバーの削除に失敗しました。');
+  const handleDeleteMember = (memberId: string, name: string) => {
+    setShowConfirmModal({
+      isOpen: true,
+      message: `メンバー「${name}」を削除しますか？`,
+      onConfirm: async () => {
+        setShowConfirmModal({ isOpen: false, message: '', onConfirm: () => {} });
+        try {
+          await api.deleteMember(groupId!, memberId);
+          fetchMembers();
+        } catch (e: any) {
+          setToastMessage(e.error || 'メンバーの削除に失敗しました。');
+        }
       }
-    }
+    });
   };
 
   const handleToggleActive = async (memberId: string, isActive: boolean) => {
@@ -77,7 +89,7 @@ export const MemberManagementView: React.FC = () => {
       await api.updateMemberStatus(groupId!, memberId, isActive);
       setMembers(prev => prev.map(m => m.id === memberId ? { ...m, isActive } : m));
     } catch (e) {
-      alert('状態の更新に失敗しました。');
+      setToastMessage('状態の更新に失敗しました。');
     }
   };
 
@@ -121,18 +133,24 @@ export const MemberManagementView: React.FC = () => {
     }
   };
 
-  const handleCleanupEvents = async () => {
-    if (!confirm('過去に削除されたメンバーの参加情報を、開催前のイベントから一括で削除します。よろしいですか？')) return;
-    try {
-      const result = await api.cleanupEvents(groupId!);
-      alert(result.message);
-    } catch (e: any) {
-      alert(e.error || '処理に失敗しました。');
-    }
+  const handleCleanupEvents = () => {
+    setShowConfirmModal({
+      isOpen: true,
+      message: '過去に削除されたメンバーの参加情報を、開催前のイベントから一括で削除します。よろしいですか？',
+      onConfirm: async () => {
+        setShowConfirmModal({ isOpen: false, message: '', onConfirm: () => {} });
+        try {
+          const result = await api.cleanupEvents(groupId!);
+          setToastMessage(result.message);
+        } catch (e: any) {
+          setToastMessage(e.error || '処理に失敗しました。');
+        }
+      }
+    });
   };
 
   const handleAnalyzeBulk = async () => {
-    if (!bulkInput.trim()) return alert('名前を入力してください。');
+    if (!bulkInput.trim()) { setToastMessage('名前を入力してください。'); return; }
     setBulkAnalyzing(true);
     try {
       const result = await api.analyzeBulkMembers(groupId!, bulkInput);
@@ -148,7 +166,7 @@ export const MemberManagementView: React.FC = () => {
 
       setBulkStep(2);
     } catch (e: any) {
-      alert(e.error || '分析に失敗しました。');
+      setToastMessage(e.error || '分析に失敗しました。');
     } finally {
       setBulkAnalyzing(false);
     }
@@ -168,11 +186,11 @@ export const MemberManagementView: React.FC = () => {
 
     try {
       const result = await api.finalizeBulkMembers(groupId!, resolutions);
-      alert(`${result.createdCount}名のメンバーを新しく登録しました。`);
+      setToastMessage(`${result.createdCount}名のメンバーを新しく登録しました。`);
       setShowBulkModal(false);
       fetchMembers();
     } catch (e: any) {
-      alert(e.error || '登録に失敗しました。');
+      setToastMessage(e.error || '登録に失敗しました。');
     } finally {
       setBulkRegistering(false);
     }
@@ -204,7 +222,7 @@ export const MemberManagementView: React.FC = () => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
-          <button className="primary-action" onClick={handleAddMember}><i data-lucide="plus"></i> メンバー追加</button>
+          <button className="primary-action" onClick={() => { setAddMemberNameInput(''); setShowAddMemberModal(true); }}><i data-lucide="plus"></i> メンバー追加</button>
           <button onClick={() => { setBulkInput(''); setBulkStep(1); setShowBulkModal(true); }}>一括登録</button>
           <button className="secondary-btn" onClick={handleCleanupEvents} style={{ display: 'none' }}>過去データ修正</button>
         </div>
@@ -321,6 +339,43 @@ export const MemberManagementView: React.FC = () => {
             <div className="modal-actions" style={{ justifyContent: 'center', gap: '15px' }}>
               <button className="secondary-btn" onClick={() => setConfirmDeletePassword(null)}>キャンセル</button>
               <button className="primary-action danger" onClick={executeDeletePassword}>削除する</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* カスタム確認モーダル */}
+      {showConfirmModal.isOpen && (
+        <div className="modal" style={{ display: 'block', zIndex: 10001 }}>
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <h3>確認</h3>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{showConfirmModal.message}</p>
+            <div className="modal-actions" style={{ justifyContent: 'center', gap: '15px' }}>
+              <button className="secondary-btn" onClick={() => setShowConfirmModal({ isOpen: false, message: '', onConfirm: () => {} })}>キャンセル</button>
+              <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* メンバー追加入力モーダル */}
+      {showAddMemberModal && (
+        <div className="modal" style={{ display: 'block', zIndex: 10001 }}>
+          <div className="modal-content" style={{ maxWidth: '400px' }}>
+            <h3>メンバー追加</h3>
+            <form onSubmit={(e) => { e.preventDefault(); handleAddMember(); }} className="input-group">
+              <label>追加するメンバーの名前:</label>
+              <input
+                type="text"
+                placeholder="名前を入力"
+                value={addMemberNameInput}
+                onChange={(e) => setAddMemberNameInput(e.target.value)}
+                autoFocus
+              />
+            </form>
+            <div className="modal-actions">
+              <button className="secondary-btn" onClick={() => setShowAddMemberModal(false)}>キャンセル</button>
+              <button className="primary-action" onClick={handleAddMember} disabled={!addMemberNameInput.trim()}>追加</button>
             </div>
           </div>
         </div>

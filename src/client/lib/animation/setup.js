@@ -154,7 +154,7 @@ window.addEventListener('resize', () => {
   resizeDebounceTimer = setTimeout(handleResize, 350);
 });
 
-export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMask = true, isResize = false, storedState = null) {
+export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMask = true, isResize = false, storedState = null, keepRevealed = false, onlyTracerName = null) {
   if (!targetCtx || !state.currentLotteryData) {
     console.error('[Animation] Prepare failed: No context or lottery data.');
     return;
@@ -166,7 +166,9 @@ export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMa
 
   if (mask && showMask) mask.style.display = 'flex';
   if (!isResize) {
-    state.setRevealedPrizes([]);
+    if (!keepRevealed) {
+      state.setRevealedPrizes([]);
+    }
     animator.tracers = [];
     animator.icons = {};
     animator.prizeImages = {};
@@ -181,11 +183,12 @@ export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMa
   const allPaths = calculateAllPaths(state.currentLotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
   animator.tracers = allParticipantsWithNames.map((p) => {
-    const path = allPaths[p.name];
+    const path = allPaths[p.slot];
     const isFinished = state.revealedPrizes.some((r) => r.participantName === p.name);
     const finalPoint = isFinished ? path[path.length - 1] : path[0];
     return {
       name: p.name,
+      slot: p.slot,
       color: p.color || '#333',
       path,
       pathIndex: isFinished ? path.length - 1 : 0,
@@ -202,9 +205,13 @@ export async function prepareStepAnimation(targetCtx, hidePrizes = false, showMa
   const baseLineColor = isDarkMode ? '#dcdcdc' : '#333';
   drawLotteryBase(targetCtx, state.currentLotteryData, baseLineColor, hidePrizes);
 
+  // onlyTracerName が指定されている場合、その名前のトレーサーの軌跡のみ描画する
+  // それ以外のトレーサーはアイコンのみ表示（「他の人の軌跡見る！」ボタン押下前の状態）
   animator.tracers.forEach((tracer) => {
     if (tracer.isFinished) {
-      drawTracerPath(targetCtx, tracer);
+      if (!onlyTracerName || tracer.name === onlyTracerName) {
+        drawTracerPath(targetCtx, tracer);
+      }
     }
     drawTracerIcon(targetCtx, tracer);
   });

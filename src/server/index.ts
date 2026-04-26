@@ -7,6 +7,7 @@ import adminRouter from './routes/admin';
 import membersRouter from './routes/members';
 import { authMiddleware } from './middleware/auth';
 import { cors } from 'hono/cors';
+import { FirestoreClient } from './utils/firestore-rest';
 
 type Bindings = {
   FIREBASE_CONFIG: string;
@@ -81,7 +82,8 @@ app.get('/api/emoji-map', (c) => {
 
 // SPAのフォールバックルーティング
 app.get('*', async (c) => {
-  if (c.req.path.startsWith('/api/') || c.req.path.startsWith('/auth/')) {
+  const originalPath = c.req.path;
+  if (originalPath.startsWith('/api/') || originalPath.startsWith('/auth/')) {
     return c.json({ error: 'Not Found' }, 404);
   }
   
@@ -94,7 +96,54 @@ app.get('*', async (c) => {
   url.pathname = '/';
   
   const req = new Request(url, c.req.raw);
-  return c.env.ASSETS.fetch(req);
+  const response = await c.env.ASSETS.fetch(req);
+  
+  if (originalPath.startsWith('/share/')) {
+    try {
+      const parts = originalPath.split('/');
+      const eventId = parts[2];
+      const participantName = parts[3] ? decodeURIComponent(parts[3]) : '';
+      
+      const db = new FirestoreClient(c.env.FIREBASE_SERVICE_ACCOUNT);
+      const eventDoc = await db.getDocument(`events/${eventId}`);
+      
+      if (eventDoc && eventDoc.name) {
+        const eventData = db.firestoreToJson(eventDoc);
+        const safeEventName = eventData.eventName || '無題のイベント';
+        let ogTitle = `${safeEventName} の結果`;
+        if (participantName) {
+           ogTitle = `${participantName}さんの結果 - ${safeEventName}`;
+        }
+        
+        const ogImageUrl = `${url.origin}/api/share/${eventId}/${encodeURIComponent(participantName)}/ogp.png`;
+        const ogDesc = `ダイナミックあみだくじで結果を確認しよう！`;
+        
+        let html = await response.text();
+        
+        const ogTags = `
+    <meta property="og:title" content="${ogTitle}" />
+    <meta property="og:description" content="${ogDesc}" />
+    <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:url" content="${c.req.url}" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${ogTitle}" />
+    <meta name="twitter:description" content="${ogDesc}" />
+    <meta name="twitter:image" content="${ogImageUrl}" />`;
+        
+        html = html.replace('</head>', `${ogTags}\n</head>`);
+        
+        return new Response(html, {
+          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        });
+      }
+    } catch (e) {
+      console.error('OGP injection failed:', e);
+      // フォールバックとしてそのまま返す
+    }
+  }
+  
+  return response;
 });
 
 export default app;

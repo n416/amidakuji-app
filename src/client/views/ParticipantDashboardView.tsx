@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api.js';
 // @ts-ignore
 import * as state from '../lib/state.js';
-import { LogOut, Trash2, Edit3, Key, PartyPopper, Gift, AlertTriangle, ArrowLeft, ImagePlus, X } from 'lucide-react';
+import { LogOut, Trash2, Edit3, Key, PartyPopper, Gift, AlertTriangle, ArrowLeft, ImagePlus, X, Lock } from 'lucide-react';
 
 export const ParticipantDashboardView: React.FC = () => {
   const { groupId, customUrl } = useParams<{ groupId?: string; customUrl?: string }>();
@@ -41,6 +41,11 @@ export const ParticipantDashboardView: React.FC = () => {
   
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPasswordInput, setNewPasswordInput] = useState('');
+
+  // グループ合言葉入力用ステート
+  const [showGroupPasswordModal, setShowGroupPasswordModal] = useState(false);
+  const [groupPasswordInput, setGroupPasswordInput] = useState('');
+  const [groupPasswordError, setGroupPasswordError] = useState('');
 
   // Custom Toast and Confirm Modals
   const [toastMessage, setToastMessage] = useState<string>('');
@@ -98,7 +103,12 @@ export const ParticipantDashboardView: React.FC = () => {
         setIsLoggedIn(false);
       }
     } catch (e: any) {
-      setError(e.error || e.message || 'ダッシュボードの読み込みに失敗しました');
+      // グループの合言葉が必要な場合はモーダルを表示
+      if (e.requiresPassword) {
+        setShowGroupPasswordModal(true);
+      } else {
+        setError(e.error || e.message || 'ダッシュボードの読み込みに失敗しました');
+      }
     } finally {
       setLoading(false);
     }
@@ -350,6 +360,43 @@ export const ParticipantDashboardView: React.FC = () => {
           </ul>
         </div>
       </div>
+
+      {/* グループ合言葉入力モーダル */}
+      {showGroupPasswordModal && (
+        <div className="modal" style={{display: 'block'}}>
+          <div className="modal-content">
+            <div className="password-entry-container">
+              <Lock size={48} className="password-icon" />
+              <h3>{group?.name || 'グループ'}の合言葉</h3>
+              <p>このグループのダッシュボードにアクセスするには合言葉が必要です。</p>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setGroupPasswordError('');
+                if (!groupPasswordInput.trim() || !group) return;
+                try {
+                  await api.verifyGroupPassword(group.id, groupPasswordInput.trim());
+                  setShowGroupPasswordModal(false);
+                  setGroupPasswordInput('');
+                  // Cookie設定済み → 再読込
+                  fetchDashboardData();
+                } catch (err: any) {
+                  setGroupPasswordError(err.error || '合言葉が違います。');
+                }
+              }} className="input-group">
+                <input
+                  type="password"
+                  placeholder="合言葉を入力"
+                  value={groupPasswordInput}
+                  onChange={(e) => setGroupPasswordInput(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" disabled={!groupPasswordInput.trim()}>認証</button>
+              </form>
+              {groupPasswordError && <p className="error-message">{groupPasswordError}</p>}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showProfileModal && (
         <div className="modal" style={{display: 'block'}}>

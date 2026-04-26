@@ -3059,4 +3059,42 @@ body.light-mode .toast-notification {
 
 /* ▲▲▲ ここまでが修正点です ▲▲▲ */
 
+/* ===== 合言葉入力画面 ===== */
+.password-entry-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.password-entry-container .password-icon {
+  color: var(--primary-color);
+  opacity: 0.7;
+}
+
+.password-entry-container h3 {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.password-entry-container p {
+  margin: 0;
+  color: #888;
+  font-size: 0.95em;
+}
+
+.password-entry-container .input-group {
+  width: 100%;
+  max-width: 400px;
+}
+
+.password-entry-container .error-message {
+  color: var(--danger-color);
+  font-size: 0.9em;
+  margin: 0;
+}
+
 /*# sourceMappingURL=style.css.map */

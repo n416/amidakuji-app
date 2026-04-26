@@ -5,9 +5,9 @@ import * as api from '../lib/api.js';
 // @ts-ignore
 import * as state from '../lib/state.js';
 
-import { ArrowLeft, PartyPopper, Hand, Pencil, Eraser } from 'lucide-react';
+import { ArrowLeft, PartyPopper, Hand, Pencil, Eraser, Gift, Lock } from 'lucide-react';
 // @ts-ignore
-import { prepareStepAnimation } from '../lib/animation.js';
+import { prepareStepAnimation, startAnimation, clearAnimationState, isAnimationRunning } from '../lib/animation.js';
 // @ts-ignore
 import { participantPanzoom, resetParticipantPanzoom } from '../lib/animation/setup.js';
 // @ts-ignore
@@ -16,10 +16,10 @@ import { getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight, getTarget
 import { drawLotteryBase, drawDoodleHoverPreview, drawDoodlePreview } from '../lib/animation/drawing.js';
 
 export const ParticipantView: React.FC = () => {
-  const { eventId, customUrl } = useParams();
+  const { eventId, customUrl, participantName } = useParams();
   const navigate = useNavigate();
 
-  const [phase, setPhase] = useState<'nameEntry' | 'join' | 'staticAmida' | 'result'>('nameEntry');
+  const [phase, setPhase] = useState<'nameEntry' | 'join' | 'staticAmida' | 'result' | 'passwordEntry'>('nameEntry');
   const [eventData, setEventData] = useState<any>(null);
   const [myMemberId, setMyMemberId] = useState<string>('');
   const [myName, setMyName] = useState<string>('');
@@ -29,11 +29,19 @@ export const ParticipantView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loginError, setLoginError] = useState('');
 
+  // グループ合言葉関連のstate
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordGroupId, setPasswordGroupId] = useState('');
+  const [passwordGroupName, setPasswordGroupName] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
   // Doodle and Canvas state
   const [doodleTool, setDoodleTool] = useState<'pan'|'draw'|'erase'>('pan');
   const [hoverDoodle, setHoverDoodle] = useState<any>(null);
   const [previewDoodle, setPreviewDoodle] = useState<any>(null);
-  const [myResult, setMyResult] = useState<string>('');
+  const [myResult, setMyResult] = useState<React.ReactNode>('');
+  const [isAnimationFinished, setIsAnimationFinished] = useState(false);
+  const [showAllTracers, setShowAllTracers] = useState(false);
 
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showConfirmModal, setShowConfirmModal] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => {} });
@@ -50,15 +58,18 @@ export const ParticipantView: React.FC = () => {
   const staticCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const resultCanvasRef = useRef<HTMLCanvasElement>(null);
+  const hasAnimatedResult = useRef(false);
 
   const actualEventId = eventId;
-  const isShare = false; // Add share mode check if needed
+  const isShare = !!participantName;
 
   useEffect(() => {
     const init = async () => {
       try {
         let data;
-        if (customUrl) {
+        if (isShare) {
+          data = await api.getPublicShareData(actualEventId!, participantName);
+        } else if (customUrl) {
           // fetch event by custom url
           data = await api.getPublicEventData(customUrl); // fallback if customUrl used
         } else {
@@ -69,8 +80,20 @@ export const ParticipantView: React.FC = () => {
         state.setCurrentLotteryData(data);
         state.setCurrentGroupId(data.groupId);
         
+        if (data.status === 'started' && data.results) {
+          state.setRevealedPrizes([]);
+        } else {
+          state.setRevealedPrizes([]);
+        }
+
         state.loadParticipantState();
-        if (state.currentParticipantId && state.currentParticipantToken) {
+        if (isShare) {
+          if (data.status === 'started') {
+            setPhase('result');
+          } else {
+            setPhase('staticAmida');
+          }
+        } else if (state.currentParticipantId && state.currentParticipantToken) {
           setMyMemberId(state.currentParticipantId);
           setMyName(state.currentParticipantName);
           
@@ -119,7 +142,14 @@ export const ParticipantView: React.FC = () => {
           return () => unsubscribe();
         }
       } catch (err: any) {
-        setError(err.error || 'イベントの読み込みに失敗しました');
+        // グループ合言葉が必要な場合は合言葉入力フェーズに遷移
+        if (err.requiresPassword && err.groupId) {
+          setPasswordGroupId(err.groupId);
+          setPasswordGroupName(err.groupName || '');
+          setPhase('passwordEntry');
+        } else {
+          setError(err.error || 'イベントの読み込みに失敗しました');
+        }
       } finally {
         setLoading(false);
       }
@@ -153,20 +183,86 @@ export const ParticipantView: React.FC = () => {
         state.setCurrentLotteryData(eventData);
         const ctx = resultCanvasRef.current.getContext('2d');
         if (ctx) {
-          const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
-          prepareStepAnimation(ctx, false, true, false, storedState).then(() => {
-            if (participantPanzoom) {
-              participantPanzoom.setOptions({ disablePan: false, disableZoom: false });
-              const wrapper = document.getElementById('participant-panzoom-wrapper');
-              if (wrapper) wrapper.style.cursor = 'grab';
-            }
-          });
-          
           const participation = eventData.participants.find((p: any) => p.memberId === myMemberId);
-          if (participation && eventData.results) {
-            const resultPrizeIndex = eventData.results[participation.slot];
-            const resultPrize = eventData.prizes[resultPrizeIndex];
-            setMyResult(resultPrize ? resultPrize.name : 'ハズレ');
+          const targetName = isShare ? participantName : (participation ? participation.name : null);
+
+          if (!hasAnimatedResult.current) {
+            hasAnimatedResult.current = true;
+            setIsAnimationFinished(false);
+            if (targetName) {
+              setMyResult(<div style={{textAlign: 'center', fontSize: '1.2em'}}><b>{targetName}さんの結果をアニメーションで確認中...</b></div>);
+            } else {
+              setMyResult(<div style={{textAlign: 'center', fontSize: '1.2em'}}><b>結果を読み込んでいます...</b></div>);
+            }
+
+            const onAnimationComplete = () => {
+              setIsAnimationFinished(true);
+              if (participantPanzoom) {
+                participantPanzoom.setOptions({ disablePan: false, disableZoom: false });
+                const wrapper = document.getElementById('participant-panzoom-wrapper');
+                if (wrapper) wrapper.style.cursor = 'grab';
+              }
+              if (targetName && eventData.results) {
+                const resultObj = eventData.results[targetName];
+                if (resultObj) {
+                  const prize = resultObj.prize;
+                  const prizeName = typeof prize === 'object' ? prize.name : prize;
+                  const prizeImageUrl = typeof prize === 'object' ? prize.imageUrl : null;
+                  const rank = typeof prize === 'object' ? prize.rank : 'uncommon';
+                  
+                  let prefixMsg = 'おめでとうございます！';
+                  let msgColor = '#333';
+                  if (rank === 'epic') {
+                    prefixMsg = '超大当たり！！おめでとうございます！！！';
+                    msgColor = '#eab308'; // yellow-500
+                  } else if (rank === 'rare') {
+                    prefixMsg = '大当たり！おめでとうございます！！';
+                    msgColor = '#ef4444'; // red-500
+                  } else if (rank === 'common') {
+                    prefixMsg = '当たり！おめでとうございます！';
+                    msgColor = '#3b82f6'; // blue-500
+                  } else if (rank === 'miss') {
+                    prefixMsg = '残念…';
+                    msgColor = '#6b7280'; // gray-500
+                  }
+                  
+                  setMyResult(
+                    <div style={{textAlign: 'center'}}>
+                      <div style={{fontSize: '1.3em', color: msgColor, fontWeight: 'bold', marginBottom: '15px'}}>{prefixMsg}</div>
+                      {prizeImageUrl && <img src={prizeImageUrl} alt={prizeName} className="result-prize-image large" style={{marginBottom: '15px', maxWidth: '200px', borderRadius: '8px'}} />}
+                      <div style={{fontSize: '1.2em'}}><b>{targetName}さんの結果は…「{prizeName}」でした！</b></div>
+                    </div>
+                  );
+                } else {
+                  setMyResult(
+                    <div style={{textAlign: 'center'}}>
+                      <div style={{fontSize: '1.3em', color: '#6b7280', fontWeight: 'bold', marginBottom: '15px'}}>残念…</div>
+                      <div style={{fontSize: '1.2em'}}><b>{targetName}さんの結果は…「ハズレ」でした。</b></div>
+                    </div>
+                  );
+                }
+              } else {
+                setMyResult(<div style={{textAlign: 'center', fontSize: '1.2em'}}><b>全結果を表示します</b></div>);
+              }
+            };
+
+            // 前回のアニメーション状態（他の画面からの残存トレーサー）をクリアしてから開始
+            clearAnimationState();
+            startAnimation(ctx, targetName ? [targetName] : null, onAnimationComplete, targetName);
+          } else {
+            // アニメーション実行中は再描画しない（animator.tracers を上書きしてしまうため）
+            if (isAnimationRunning()) return;
+
+            const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
+            // showAllTracers が false の場合、自分の軌跡のみ表示する（他人の軌跡はボタン押下後に表示）
+            const onlyName = showAllTracers ? null : targetName;
+            prepareStepAnimation(ctx, false, true, true, storedState, true, onlyName).then(() => {
+              if (participantPanzoom) {
+                participantPanzoom.setOptions({ disablePan: false, disableZoom: false });
+                const wrapper = document.getElementById('participant-panzoom-wrapper');
+                if (wrapper) wrapper.style.cursor = 'grab';
+              }
+            });
           }
         }
       }
@@ -189,7 +285,7 @@ export const ParticipantView: React.FC = () => {
     return () => {
       observer.disconnect();
     };
-  }, [phase, eventData, myMemberId]); // Removed doodleTool from dependencies
+  }, [phase, eventData, myMemberId, showAllTracers]); // showAllTracers の変更時も再描画
 
   // Cleanup Panzoom only on component unmount
   useEffect(() => {
@@ -343,6 +439,56 @@ export const ParticipantView: React.FC = () => {
     }
   };
 
+  // グループ合言葉検証ハンドラ
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    if (!passwordInput.trim() || !passwordGroupId) return;
+
+    try {
+      await api.verifyGroupPassword(passwordGroupId, passwordInput.trim());
+      // 検証成功 → Cookieが設定されるので再読込
+      setPasswordInput('');
+      setLoading(true);
+      try {
+        let data;
+        if (isShare) {
+          data = await api.getPublicShareData(actualEventId!, participantName);
+        } else {
+          data = await api.getPublicEventData(actualEventId!);
+        }
+        setEventData(data);
+        state.setCurrentLotteryData(data);
+        state.setCurrentGroupId(data.groupId);
+        state.setRevealedPrizes([]);
+        state.loadParticipantState();
+
+        if (isShare) {
+          setPhase(data.status === 'started' ? 'result' : 'staticAmida');
+        } else if (state.currentParticipantId && state.currentParticipantToken) {
+          setMyMemberId(state.currentParticipantId);
+          setMyName(state.currentParticipantName);
+          const participation = data.participants.find((p: any) => p.memberId === state.currentParticipantId);
+          if (data.status === 'started') {
+            setPhase('result');
+          } else if (participation) {
+            setPhase('staticAmida');
+          } else {
+            setPhase('join');
+          }
+        } else {
+          setPhase('nameEntry');
+        }
+      } catch (retryErr: any) {
+        setError(retryErr.error || 'イベントの読み込みに失敗しました');
+      } finally {
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setPasswordError(err.error || '合言葉が正しくありません');
+    }
+  };
+
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -406,17 +552,39 @@ export const ParticipantView: React.FC = () => {
   return (
     <div id="participantView" className="view-container">
       <h2 id="participantEventName">{eventData?.eventName || '無題のイベント'}</h2>
-      <div className="event-header">
-        <button 
-          className="button" 
-          style={{background: 'none', border: 'none', color: 'var(--primary-color)', display: 'inline-flex', padding: 0}}
-          onClick={() => navigate(customUrl ? `/g/${customUrl}/dashboard` : `/groups/${eventData?.groupId}/dashboard`)}
-        >
-          <ArrowLeft size={16} style={{marginRight: '5px'}}/> ダッシュボードに戻る
-        </button>
-      </div>
+      {!isShare && (
+        <div className="event-header">
+          <button 
+            className="button" 
+            style={{background: 'none', border: 'none', color: 'var(--primary-color)', display: 'inline-flex', padding: 0}}
+            onClick={() => navigate(customUrl ? `/g/${customUrl}/dashboard` : `/groups/${eventData?.groupId}/dashboard`)}
+          >
+            <ArrowLeft size={16} style={{marginRight: '5px'}}/> ダッシュボードに戻る
+          </button>
+        </div>
+      )}
 
       <div id="participantFlow">
+        {phase === 'passwordEntry' && (
+          <div className="controls">
+            <div className="password-entry-container">
+              <Lock size={48} className="password-icon" />
+              <h3>{passwordGroupName || 'グループ'}の合言葉</h3>
+              <p>このイベントにアクセスするにはグループの合言葉が必要です。</p>
+              <form onSubmit={handlePasswordSubmit} className="input-group">
+                <input
+                  type="password"
+                  placeholder="合言葉を入力"
+                  value={passwordInput}
+                  onChange={e => setPasswordInput(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" disabled={!passwordInput.trim()}>認証</button>
+              </form>
+              {passwordError && <p className="error-message">{passwordError}</p>}
+            </div>
+          </div>
+        )}
         {phase === 'nameEntry' && (
           <div className="controls">
             <h3>イベントに参加</h3>
@@ -508,19 +676,19 @@ export const ParticipantView: React.FC = () => {
 
             <div className="controls" style={{marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px'}}>
               <button className="delete-btn" onClick={async () => {
-                confirmAction('参加を取り消しますか？', async () => {
+                confirmAction('参加枠を変更しますか？', async () => {
                   try {
                     await api.deleteParticipant(actualEventId!, state.currentParticipantToken);
                     setPhase('join');
                     setSelectedSlot(null);
-                    showToast('参加を取り消しました。');
+                    showToast('参加枠を解除しました。新しい枠を選んでください。');
                   } catch (e: any) {
-                    showToast(e.error || '取り消しに失敗しました');
+                    showToast(e.error || '変更に失敗しました');
                   }
                   setShowConfirmModal({ ...showConfirmModal, isOpen: false });
                 });
               }}>
-                参加を取り消す
+                参加枠を変更する
               </button>
             </div>
           </div>
@@ -534,10 +702,104 @@ export const ParticipantView: React.FC = () => {
                 <canvas id="participantCanvas" ref={resultCanvasRef}></canvas>
               </div>
             </div>
-            {myResult && <p id="myResult" style={{fontSize: '1.2em', fontWeight: 'bold', marginTop: '20px'}}>あなたの結果: {myResult}</p>}
-            <div id="allResultsContainer">
-               {/* 共通のResult一覧をあとでコンポーネント化して配置します */}
-            </div>
+            {myResult && <div id="myResult" style={{marginTop: '20px', width: '100%', display: 'flex', justifyContent: 'center'}}>{myResult}</div>}
+            
+            {!isShare && isAnimationFinished && (
+              <div className="controls" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                {(() => {
+                   const participation = eventData?.participants?.find((p: any) => p.memberId === myMemberId);
+                   const isAcknowledged = participation?.acknowledgedResult;
+                   
+                   return !isShare && !isAcknowledged ? (
+                     <button className="primary-action" onClick={async () => {
+                        try {
+                          await api.acknowledgeResult(actualEventId!, myMemberId!, state.currentParticipantToken);
+                          showToast('結果を受け取りました！');
+                          setEventData({
+                            ...eventData,
+                            participants: eventData.participants.map((p: any) => p.memberId === myMemberId ? { ...p, acknowledgedResult: true } : p)
+                          });
+                        } catch (e: any) {
+                          showToast(e.error || '処理に失敗しました。');
+                        }
+                     }}>
+                        <Gift size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                        結果を受け取る
+                     </button>
+                   ) : null;
+                })()}
+
+                {!isShare && (
+                  <button className="secondary-btn" onClick={() => {
+                     const participation = eventData?.participants?.find((p: any) => p.memberId === myMemberId);
+                     const shareUrl = `${window.location.origin}/share/${actualEventId}/${encodeURIComponent(participation?.name || '')}`;
+                     navigator.clipboard.writeText(shareUrl)
+                       .then(() => showToast('クリップボードにシェア用URLをコピーしました！'))
+                       .catch(() => prompt('このURLをコピーしてシェアしてください:', shareUrl));
+                  }}>
+                     結果をシェアする
+                  </button>
+                )}
+                
+                {!isShare && (
+                  <button className="secondary-btn" onClick={async () => {
+                    try {
+                      const group = await api.getGroup(state.currentGroupId!);
+                      if (group) {
+                        window.location.href = group.customUrl ? `/g/${group.customUrl}/dashboard` : `/groups/${group.id}/dashboard`;
+                      } else {
+                        window.location.href = '/';
+                      }
+                    } catch (e) {
+                      window.location.href = '/';
+                    }
+                  }}>
+                     戻る
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!isShare && isAnimationFinished && eventData?.results && (
+              <div id="allResultsContainer" style={{ marginTop: '30px' }}>
+                <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h3>みんなの結果</h3>
+                  <button className="secondary-btn" onClick={() => {
+                    // 全員の軌跡を表示するフラグを立てる（useEffect内で再描画される）
+                    setShowAllTracers(true);
+                  }}>
+                    他の人の軌跡見る！
+                  </button>
+                </div>
+                <ul className="item-list">
+                  {Object.entries(eventData.results).map(([name, result]: [string, any]) => {
+                    const prizeName = typeof result.prize === 'object' ? result.prize.name : result.prize;
+                    const prizeImageUrl = typeof result.prize === 'object' ? result.prize.imageUrl : null;
+                    const participation = eventData.participants?.find((p: any) => p.memberId === myMemberId);
+                    const isMyResult = participation && participation.name === name;
+                    
+                    return (
+                      <li key={name} className={`item-list-item ${isMyResult ? 'highlight' : ''}`}>
+                        {prizeImageUrl && <img src={prizeImageUrl} alt={prizeName} className="result-prize-image large" />}
+                        <span>{name} → {prizeName}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            {isShare && isAnimationFinished && (
+              <div style={{ marginTop: '40px', padding: '30px 20px', textAlign: 'center', backgroundColor: '#f0f9ff', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+                <h3 style={{ margin: '0 0 10px 0', color: '#0369a1' }}>ダイナミックあみだくじ</h3>
+                <p style={{ margin: '0 0 20px 0', color: '#0c4a6e', fontSize: '0.95em', lineHeight: '1.6' }}>
+                  ブラウザで誰でも簡単に、本格的でド派手なあみだくじが作れます。<br/>
+                  あなたもオリジナルのあみだくじを作ってみませんか？
+                </p>
+                <button className="primary-action" onClick={() => window.location.href = '/'}>
+                  あみだくじを無料で作成する
+                </button>
+              </div>
+            )}
           </div>
         )}
 

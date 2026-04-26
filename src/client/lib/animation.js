@@ -1,5 +1,5 @@
 import * as state from './state.js'; // この行を追記
-import {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, animator} from './animation/core.js';
+import {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator} from './animation/core.js';
 import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes, wrapText, showAllTracersInstantly} from './animation/drawing.js';
 import {calculatePath, getVirtualWidth, getTargetHeight, calculatePrizeAreaHeight, getNameAreaHeight, calculateClientSideResults} from './animation/path.js';
 import {prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, handleResize, adminPanzoom, participantPanzoom} from './animation/setup.js';
@@ -99,4 +99,4 @@ export function fadePrizes(targetCtx, show) {
   prizeFadeAnimationId = requestAnimationFrame(step);
 }
 
-export {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, prepareStepAnimation, showAllTracersInstantly, adminPanzoom, participantPanzoom};
+export {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, prepareStepAnimation, showAllTracersInstantly, adminPanzoom, participantPanzoom};

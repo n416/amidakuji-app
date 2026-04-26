@@ -166,7 +166,7 @@ export function calculateAllPaths(participants, allLines, containerWidth, contai
     });
 
     finalPath.push({x: participantSpacing * (currentPathIdx + 1), y: lineBottomY});
-    finalPaths[p.name] = finalPath;
+    finalPaths[p.slot] = finalPath;
   });
 
   console.groupEnd();

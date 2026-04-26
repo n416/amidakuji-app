@@ -9,7 +9,7 @@ import { ArrowLeft, X } from 'lucide-react';
 export const GroupEventListView: React.FC = () => {
   const { groupId, customUrl } = useParams<{ groupId?: string; customUrl?: string }>();
   const navigate = useNavigate();
-  
+
   const [loading, setLoading] = useState(true);
   const [group, setGroup] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
@@ -32,8 +32,8 @@ export const GroupEventListView: React.FC = () => {
 
         let currentGroup;
         try {
-          currentGroup = isCustomUrl 
-            ? await api.getGroupByCustomUrl(identifier) 
+          currentGroup = isCustomUrl
+            ? await api.getGroupByCustomUrl(identifier)
             : await api.getGroup(identifier);
           setGroup(currentGroup);
           state.setCurrentGroupId(currentGroup.id);
@@ -44,8 +44,8 @@ export const GroupEventListView: React.FC = () => {
         }
 
         try {
-          const fetchedEvents = isCustomUrl 
-            ? await api.getEventsByCustomUrl(identifier) 
+          const fetchedEvents = isCustomUrl
+            ? await api.getEventsByCustomUrl(identifier)
             : await api.getPublicEventsForGroup(identifier);
           setEvents(fetchedEvents);
         } catch (e: any) {
@@ -62,10 +62,10 @@ export const GroupEventListView: React.FC = () => {
     fetchData();
   }, [identifier, isCustomUrl]);
 
-  if (loading) return <div className="loading-mask" style={{display: 'flex'}}>読み込み中...</div>;
+  if (loading) return <div className="loading-mask" style={{ display: 'flex' }}>読み込み中...</div>;
 
   const groupName = group ? group.name : '不明なグループ';
-  
+
   const handleBackClick = () => {
     if (state.currentUser) {
       if (group && group.id) {
@@ -88,13 +88,13 @@ export const GroupEventListView: React.FC = () => {
     <div id="groupEventListView" className="view-container">
       <div className="event-header">
         {group && (
-          <button 
-            id="backToDashboardFromEventListButton" 
-            className="button" 
-            style={{background: 'none', border: 'none', color: 'var(--primary-color)', display: 'inline-flex', padding: 0}} 
+          <button
+            id="backToDashboardFromEventListButton"
+            className="button"
+            style={{ background: 'none', border: 'none', color: 'var(--primary-color)', display: 'inline-flex', padding: 0 }}
             onClick={handleBackClick}
           >
-            <ArrowLeft size={16} style={{marginRight: '5px'}}/> {state.currentUser ? '管理ダッシュボードに戻る' : 'ダッシュボードに戻る'}
+            <ArrowLeft size={16} style={{ marginRight: '5px' }} /> {state.currentUser ? '管理ダッシュボードに戻る' : 'ダッシュボードに戻る'}
           </button>
         )}
       </div>
@@ -106,11 +106,25 @@ export const GroupEventListView: React.FC = () => {
           <li className="item-list-item">現在参加できるイベントはありません。</li>
         ) : (
           events.map(event => {
-            const date = new Date((event.createdAt._seconds || event.createdAt.seconds) * 1000);
+            // Firestoreのタイムスタンプは複数形式で返る可能性があるため安全にパース
+            let date: Date | null = null;
+            const ts = event.createdAt;
+            if (ts) {
+              if (ts._seconds !== undefined) {
+                date = new Date(ts._seconds * 1000);
+              } else if (ts.seconds !== undefined) {
+                date = new Date(ts.seconds * 1000);
+              } else if (typeof ts === 'string') {
+                date = new Date(ts);
+              } else if (typeof ts === 'number') {
+                date = new Date(ts);
+              }
+            }
+            const dateStr = date && !isNaN(date.getTime()) ? date.toLocaleDateString() : '日付不明';
             const eventUrl = isCustomUrl ? `/g/${identifier}/${event.id}` : `/events/${event.id}`;
             return (
               <li key={event.id} className="item-list-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                <span><strong>{event.eventName || '無題のイベント'}</strong>（{date.toLocaleDateString()} 作成）</span>
+                <span><strong>{event.eventName || '無題のイベント'}</strong>（{dateStr} 作成）</span>
                 <a href={eventUrl} className="button primary-action" onClick={(e) => {
                   e.preventDefault();
                   navigate(eventUrl);
@@ -132,11 +146,20 @@ export const GroupEventListView: React.FC = () => {
               e.preventDefault();
               setPasswordError('');
               try {
-                // パスワードを送信してグループにログイン
-                const res = await api.loginOrRegisterToGroup(identifier, null, passwordInput);
-                state.saveParticipantState(res.token, res.memberId, res.name);
+                // グループの合言葉を検証（Cookieが設定される）
+                const resolvedGroupId = group?.id || identifier;
+                await api.verifyGroupPassword(resolvedGroupId, passwordInput);
                 setShowPasswordModal(false);
-                window.location.reload(); // 成功したらリロードしてイベント一覧を再取得
+                // Cookie設定済みなのでイベント一覧を再取得
+                try {
+                  const fetchedEvents = isCustomUrl
+                    ? await api.getEventsByCustomUrl(identifier)
+                    : await api.getPublicEventsForGroup(identifier);
+                  setEvents(fetchedEvents);
+                  setError(null);
+                } catch (retryErr: any) {
+                  setError(retryErr.error || 'イベントの読み込みに失敗しました');
+                }
               } catch (err: any) {
                 setPasswordError(err.error || '合言葉が違います。');
               }
@@ -144,15 +167,15 @@ export const GroupEventListView: React.FC = () => {
               <h3>非公開グループ</h3>
               <p>このグループのイベント一覧を見るには合言葉が必要です。</p>
               <div className="input-group">
-                <input 
-                  type="password" 
-                  placeholder="合言葉を入力" 
+                <input
+                  type="password"
+                  placeholder="合言葉を入力"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   autoFocus
                 />
               </div>
-              {passwordError && <p className="error-message" style={{color: 'var(--danger-color)'}}>{passwordError}</p>}
+              {passwordError && <p className="error-message" style={{ color: 'var(--danger-color)' }}>{passwordError}</p>}
               <div className="modal-actions">
                 <button type="submit" className="primary-action">確認</button>
               </div>

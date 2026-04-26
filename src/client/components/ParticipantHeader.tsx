@@ -16,6 +16,8 @@ export const ParticipantHeader: React.FC = () => {
     (location.pathname.startsWith('/groups/') && !location.pathname.startsWith('/admin/groups')) || 
     (location.pathname.startsWith('/g/') && !location.pathname.startsWith('/admin/'));
 
+  const isShareView = location.pathname.startsWith('/share/');
+
   useEffect(() => {
     const checkState = () => {
       state.loadParticipantState();
@@ -36,7 +38,7 @@ export const ParticipantHeader: React.FC = () => {
     };
   }, [location.pathname]);
 
-  if (!isParticipantView) {
+  if (!isParticipantView || isShareView) {
     return null;
   }
 

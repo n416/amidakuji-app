@@ -180,7 +180,7 @@ function animationLoop() {
     const allPaths = calculateAllPaths(state.currentLotteryData.participants, allLines, currentContainerWidth, currentContainerHeight, container);
 
     animator.tracers.forEach((tracer) => {
-      const newPath = allPaths[tracer.name];
+      const newPath = allPaths[tracer.slot];
       if (newPath) {
         tracer.path = newPath;
         if (tracer.isFinished) {
@@ -277,8 +277,8 @@ export async function startAnimation(targetCtx, userNames = [], onComplete = nul
   const allPaths = calculateAllPaths(state.currentLotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
   const newTracers = participantsToAnimate.map((p) => {
-    const path = allPaths[p.name];
-    return {name: p.name, color: p.color || '#333', path, pathIndex: 0, progress: 0, x: path[0].x, y: path[0].y, isFinished: false, celebrated: false};
+    const path = allPaths[p.slot];
+    return {name: p.name, slot: p.slot, color: p.color || '#333', path, pathIndex: 0, progress: 0, x: path[0].x, y: path[0].y, isFinished: false, celebrated: false};
   });
   const uniqueFinishedTracers = finishedTracers.filter((t) => !namesToAnimate.includes(t.name));
   animator.tracers = [...uniqueFinishedTracers, ...newTracers];
@@ -388,9 +388,10 @@ export async function resetAnimation(onComplete = null) {
   const allPaths = calculateAllPaths(state.currentLotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
   animator.tracers = allParticipantsWithNames.map((p) => {
-    const path = allPaths[p.name];
+    const path = allPaths[p.slot];
     return {
       name: p.name,
+      slot: p.slot,
       color: p.color || '#333',
       path,
       pathIndex: 0,

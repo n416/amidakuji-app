@@ -115,6 +115,7 @@ export const BroadcastView: React.FC = () => {
   const isPending = eventData?.status === 'pending';
   const allParticipants = eventData?.participants.filter((p: any) => p.name) || [];
   const noParticipants = allParticipants.length === 0;
+  const uniqueParticipantNames = Array.from(new Set(allParticipants.map((p: any) => p.name))) as string[];
 
   return (
     <div id="broadcastView" className={`view-container ${isFullscreen ? 'fullscreen-active' : ''}`}>
@@ -212,8 +213,8 @@ export const BroadcastView: React.FC = () => {
               <label>特定ユーザー:</label>
               <select value={highlightUser} onChange={e => setHighlightUser(e.target.value)} disabled={controlsDisabled || noParticipants}>
                 <option value="">選択してください</option>
-                {allParticipants.map((p: any) => (
-                  <option key={p.name} value={p.name}>{p.name}</option>
+                {uniqueParticipantNames.map((name: string) => (
+                  <option key={name} value={name}>{name}</option>
                 ))}
               </select>
               <button 
