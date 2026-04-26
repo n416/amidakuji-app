@@ -15,6 +15,7 @@ import { ParticipantView } from './views/ParticipantView';
 import { TutorialListView } from './views/TutorialListView';
 import { BackgroundGrid } from './components/BackgroundGrid';
 import { SettingsPanel } from './components/SettingsPanel';
+import { TutorialEngine } from './tutorial/TutorialEngine';
 
 const App: React.FC = () => {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
@@ -54,47 +55,7 @@ const App: React.FC = () => {
     initApp();
   }, []);
 
-  useEffect(() => {
-    // @ts-ignore
-    if (window.tutorialManager && !window.tutorialManagerInitialized) {
-      // @ts-ignore
-      window.tutorialManager.init({
-        state: {
-          get currentGroupId() { 
-            const st = store.getState();
-            return st.lottery.currentGroupId || st.admin.currentGroup?.id || localStorage.getItem('lastUsedGroupId'); 
-          },
-          get currentUser() { return store.getState().auth.user; }
-        },
-        router: {
-          navigateTo: (url: string) => navigate(url),
-          removeQueryParam: (param: string) => {
-            const url = new URL(window.location.href);
-            url.searchParams.delete(param);
-            window.history.replaceState({}, '', url.toString());
-          }
-        },
-        ui: {
-          showToast,
-          showCustomConfirm: (msg: string) => new Promise((resolve) => {
-             setConfirmState({ isOpen: true, message: msg, resolve });
-          })
-        }
-      });
-      // @ts-ignore
-      window.tutorialManagerInitialized = true;
-    }
-  }, [navigate]);
 
-  useEffect(() => {
-    // @ts-ignore
-    if (typeof window.runTutorials === 'function') {
-      setTimeout(() => {
-        // @ts-ignore
-        window.runTutorials();
-      }, 500); // Wait for view to render
-    }
-  }, [location.pathname, location.search]);
 
   if (!isFirebaseReady) {
     return (
@@ -151,6 +112,7 @@ const App: React.FC = () => {
         </div>
       </div>
     )}
+    <TutorialEngine />
     </>
   );
 };

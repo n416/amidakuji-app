@@ -1,5 +1,33 @@
-// tutorialData.js (最終版)
-window.tutorials = [
+import { RootState } from '../store';
+
+export type TutorialStep = {
+  type: string;
+  match: string;
+  precondition?: (state: any) => boolean;
+  preconditionFailMessage?: string;
+  subSteps: Array<{
+    message: string;
+    highlightSelector?: string;
+    focusSelector?: string;
+    waitForClickOn?: string;
+    waitForInputOn?: string;
+    removeOkButton?: boolean;
+    showNextButtonOnInput?: boolean;
+    complete?: boolean;
+    precondition?: (state: any) => boolean;
+  }>;
+};
+
+export type TutorialStory = {
+  id: string;
+  title: string;
+  description: string;
+  showInList?: boolean;
+  returnOnComplete?: boolean;
+  steps: TutorialStep[];
+};
+
+export const tutorials: TutorialStory[] = [
   {
     id: '01-create-group',
     title: '最初のステップ：グループ作成',
@@ -56,7 +84,7 @@ window.tutorials = [
         type: 'page',
         match: 'eventEditView',
         // 新規イベント作成時のみ、このチュートリアルが実行されるようにする
-        precondition: (state) => !state.currentEventId,
+        precondition: (state: any) => !state.currentEventId,
         subSteps: [
           {
             message: 'ここがイベント編集画面です。あみだくじのゴールとなる「景品」を追加します。「追加」ボタンを押してください。',
@@ -117,7 +145,7 @@ window.tutorials = [
         type: 'page',
         match: 'eventEditView',
         // 既存イベント編集中のみ、このチュートリアルが実行されるようにする
-        precondition: (state) => !!state.currentEventId && state.currentLotteryData?.status !== 'started',
+        precondition: (state: any) => !!state.currentEventId && state.currentLotteryData?.status !== 'started',
         subSteps: [
           {
             message: 'イベント内容を編集すると、保存ボタンが表示されます。試しにイベント名を少し変更してみてください。',
@@ -196,10 +224,8 @@ window.tutorials = [
       {
         type: 'page',
         match: 'dashboardView',
-        // ▼▼▼ 以下の2行を新しく追加してください ▼▼▼
-        precondition: () => document.querySelector('[data-tutorial-target="edit-event"]'),
+        precondition: () => !!document.querySelector('[data-tutorial-target="edit-event"]'),
         preconditionFailMessage: 'このチュートリアルを開始するには、未実施のイベント（「編集」ボタンが表示されているもの）が必要です。先にイベントを作成してください。',
-        // ▲▲▲ 追加ここまで ▲▲▲
         subSteps: [
           {
             message: '作成済みのイベントを配信してみましょう。リストから配信したいイベントの「編集」ボタンを押してください。',
@@ -213,7 +239,7 @@ window.tutorials = [
       {
         type: 'page',
         match: 'eventEditView',
-        precondition: (state) => state.currentLotteryData && state.currentLotteryData.status !== 'started',
+        precondition: (state: any) => state.currentLotteryData && state.currentLotteryData.status !== 'started',
         subSteps: [
           {
             message: 'イベント実施前の最終準備画面です。参加者が足りない場合にメンバーを自動で割り当てたり、あみだくじのパターンを変更したりできます。まず「参加枠を埋める」ボタンを押してみましょう。',
@@ -259,21 +285,21 @@ window.tutorials = [
         subSteps: [
           {
             message: 'ここが配信画面です！参加者が全員参加したら、中央の「イベント開始！」ボタンで抽選を確定します。押してみましょう。',
-            precondition: (state) => state.currentLotteryData?.status === 'pending',
+            precondition: (state: any) => state.currentLotteryData?.status === 'pending',
             highlightSelector: '#startEventButton',
             waitForClickOn: '#startEventButton',
             removeOkButton: true,
           },
           {
             message: 'イベントが開始されました！右下のボタンを押してコントロールパネルを開き、アニメーションを再生しましょう。',
-            precondition: (state) => state.currentLotteryData?.status === 'started',
+            precondition: (state: any) => state.currentLotteryData?.status === 'started',
             highlightSelector: '#openSidebarButton',
             waitForClickOn: '#openSidebarButton',
             removeOkButton: true,
           },
           {
             message: '「全結果を再生」ボタンを押すと、あみだくじのアニメーションが開始します。これでチュートリアルは完了です！',
-            precondition: (state) => state.currentLotteryData?.status === 'started',
+            precondition: (state: any) => state.currentLotteryData?.status === 'started',
             highlightSelector: '#animateAllButton',
             waitForClickOn: '#animateAllButton',
             removeOkButton: true,

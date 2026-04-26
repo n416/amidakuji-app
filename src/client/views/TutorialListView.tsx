@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { store } from '../store';
+import { tutorials as tutorialDataList } from '../tutorial/tutorialData';
+import { generateTutorialUrl } from '../tutorial/tutorialUtils';
 
 export const TutorialListView: React.FC = () => {
   const navigate = useNavigate();
@@ -15,11 +17,11 @@ export const TutorialListView: React.FC = () => {
   };
 
   useEffect(() => {
-    // @ts-ignore
-    if (window.tutorials) {
-      // @ts-ignore
-      setTutorials(window.tutorials.filter((t: any) => t.showInList !== false));
-    }
+    setTutorials(tutorialDataList.filter(t => t.showInList !== false));
+
+    const handleTutorialsUpdated = () => setRefreshTrigger(prev => prev + 1);
+    window.addEventListener('tutorialsUpdated', handleTutorialsUpdated);
+    return () => window.removeEventListener('tutorialsUpdated', handleTutorialsUpdated);
   }, []);
 
   const handleReset = (id: string, title: string) => {
@@ -30,10 +32,8 @@ export const TutorialListView: React.FC = () => {
 
   const handleLinkClick = (e: React.MouseEvent, tutorial: any) => {
     e.preventDefault();
-    // @ts-ignore
-    if (window.tutorialManager) {
-      // @ts-ignore
-      window.tutorialManager.setReturnUrl(window.location.pathname);
+    if (typeof (window as any).setTutorialReturnUrl === 'function') {
+      (window as any).setTutorialReturnUrl(window.location.pathname);
     }
     
     // Create a proxy state similar to App.tsx so generateTutorialUrl can resolve currentGroupId
@@ -43,8 +43,7 @@ export const TutorialListView: React.FC = () => {
       get currentUser() { return st.auth.user; }
     };
 
-    // @ts-ignore
-    const href = window.tutorialUtils?.generateTutorialUrl(tutorial, proxyState) || '#';
+    const href = generateTutorialUrl(tutorial, proxyState) || '#';
     
     if (href === '#NO_GROUP') {
       showToast('このチュートリアルを開始するには、グループが必要です。先にグループを作成して選択してください。');
