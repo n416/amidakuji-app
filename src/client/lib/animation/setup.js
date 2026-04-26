@@ -5,20 +5,48 @@ import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes} fro
 
 export let adminPanzoom = null;
 export let participantPanzoom = null;
+let currentAdminPanzoomElement = null;
+let currentParticipantPanzoomElement = null;
 let resizeDebounceTimer;
+
+export function resetParticipantPanzoom() {
+  if (participantPanzoom) {
+    try { participantPanzoom.destroy(); } catch(e) {}
+    participantPanzoom = null;
+    currentParticipantPanzoomElement = null;
+  }
+}
+
+export function resetAdminPanzoom() {
+  if (adminPanzoom) {
+    try { adminPanzoom.destroy(); } catch(e) {}
+    adminPanzoom = null;
+    currentAdminPanzoomElement = null;
+  }
+}
 
 export function initializePanzoom(canvasElement) {
   if (!canvasElement) return null;
 
+  const panzoomElement = canvasElement.parentElement;
   const isParticipantCanvas = canvasElement.id === 'participantCanvas' || canvasElement.id === 'participantCanvasStatic';
+
   if (isParticipantCanvas && participantPanzoom) {
-    return participantPanzoom;
+    if (currentParticipantPanzoomElement === panzoomElement) {
+      return participantPanzoom;
+    } else {
+      try { participantPanzoom.destroy(); } catch(e) {}
+      participantPanzoom = null;
+    }
   }
   if (canvasElement.id === 'adminCanvas' && adminPanzoom) {
-    return adminPanzoom;
+    if (currentAdminPanzoomElement === panzoomElement) {
+      return adminPanzoom;
+    } else {
+      try { adminPanzoom.destroy(); } catch(e) {}
+      adminPanzoom = null;
+    }
   }
-
-  const panzoomElement = canvasElement.parentElement;
 
   const panzoom = Panzoom(panzoomElement, {
     maxScale: 10,
@@ -44,8 +72,10 @@ export function initializePanzoom(canvasElement) {
 
   if (canvasElement.id === 'adminCanvas') {
     adminPanzoom = panzoom;
-  } else if (canvasElement.id === 'participantCanvas' || canvasElement.id === 'participantCanvasStatic') {
+    currentAdminPanzoomElement = panzoomElement;
+  } else if (isParticipantCanvas) {
     participantPanzoom = panzoom;
+    currentParticipantPanzoomElement = panzoomElement;
   }
 
   return panzoom;
@@ -108,7 +138,7 @@ export function handleResize() {
   if (adminCanvas && adminCanvas.offsetParent !== null) {
     console.log('[Animation] Redrawing admin canvas for resize.');
     const hidePrizes = state.currentLotteryData?.status !== 'started';
-    prepareStepAnimation(elements.adminCanvas.getContext('2d'), hidePrizes, false, true);
+    prepareStepAnimation(adminCanvas.getContext('2d'), hidePrizes, false, true);
   } else if (participantCanvas && participantCanvas.offsetParent !== null) {
     console.log('[Animation] Redrawing participant canvas for resize.');
     const hidePrizes = state.currentLotteryData?.displayMode === 'private' && state.currentLotteryData?.status !== 'started';

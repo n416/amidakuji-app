@@ -79,23 +79,13 @@ admin.post('/admin/members/:memberId/delete-password', requireAuth, async (c) =>
       return c.json({ error: '権限がありません。' }, 403);
     }
 
-    // パスワードを削除 (ハッシュを消す)
-    // participants内の該当メンバーのpasswordHashを削除
-    let participants = groupData.participants || [];
-    let updated = false;
-    participants = participants.map((p: any) => {
-      if (p.id === memberId) {
-        delete p.passwordHash;
-        updated = true;
-      }
-      return p;
-    });
-
-    if (!updated) {
+    // パスワードを削除 (新スキーマの members サブコレクション)
+    const memberDoc = await db.getDocument(`groups/${groupId}/members/${memberId}`);
+    if (!memberDoc) {
       return c.json({ error: 'メンバーが見つかりません。' }, 404);
     }
 
-    await db.patchDocument(`groups/${groupId}`, { participants });
+    await db.patchDocument(`groups/${groupId}/members/${memberId}`, { password: null });
 
     if (requestId) {
       await db.deleteDocument(`passwordResetRequests/${requestId}`);

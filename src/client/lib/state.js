@@ -96,6 +96,7 @@ export function saveParticipantState(token, memberId, name) {
   localStorage.setItem(`memberId-group-${currentGroupId}`, memberId);
   localStorage.setItem(`memberName-group-${currentGroupId}`, name);
   loadParticipantState();
+  window.dispatchEvent(new Event('participantStateChanged'));
 }
 
 export function clearParticipantState() {
@@ -106,6 +107,7 @@ export function clearParticipantState() {
   currentParticipantToken = null;
   currentParticipantId = null;
   currentParticipantName = null;
+  window.dispatchEvent(new Event('participantStateChanged'));
 }
 
 export let participantEventList = [];

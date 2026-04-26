@@ -13,6 +13,7 @@ const elements = {
 
 // グループリストを描画する関数
 export function renderGroupList(groups) {
+  window.dispatchEvent(new CustomEvent('groupsUpdated', { detail: groups }));
   if (!elements.groupList) return;
   elements.groupList.innerHTML = '';
   groups.forEach((group) => {

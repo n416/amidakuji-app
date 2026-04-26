@@ -149,6 +149,88 @@ async function handleCopyEvent(eventId) {
   }
 }
 
+export async function openPrizeMasterManager(groupId) {
+  if (!groupId) return;
+  processedMasterPrizeFile = null;
+  const handlers = {
+    onAddMaster: async () => {
+      const name = ui.elements.addMasterPrizeNameInput.value.trim();
+      const rank = ui.elements.prizeMasterModal.querySelector('.prize-rank-selector').dataset.rank;
+      if (!name || !processedMasterPrizeFile) {
+        return ui.showToast('賞品名と画像を選択してください');
+      }
+      try {
+        ui.elements.addMasterPrizeButton.disabled = true;
+        const buffer = await processedMasterPrizeFile.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const fileHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+        
+        const {signedUrl, imageUrl} = await api.generatePrizeMasterUploadUrl(groupId, processedMasterPrizeFile.type, fileHash);
+        await fetch(signedUrl, {method: 'PUT', headers: {'Content-Type': processedMasterPrizeFile.type}, body: processedMasterPrizeFile});
+        await api.addPrizeMaster(groupId, name, imageUrl, rank);
+        ui.showToast('賞品マスターを追加しました。');
+        const masters = await api.getPrizeMasters(groupId);
+        ui.renderPrizeMasterList(masters, false);
+        ui.elements.addMasterPrizeNameInput.value = '';
+        ui.elements.addMasterPrizeImageInput.value = '';
+        processedMasterPrizeFile = null;
+        if (ui.elements.addMasterPrizeImagePreview) {
+          ui.elements.addMasterPrizeImagePreview.src = '';
+          ui.elements.addMasterPrizeImagePreview.style.display = 'none';
+        }
+        if (ui.elements.addMasterPrizePlaceholder) {
+          ui.elements.addMasterPrizePlaceholder.style.display = 'flex';
+        }
+      } catch (error) {
+        ui.showToast(error.error || '追加に失敗しました');
+      } finally {
+        ui.elements.addMasterPrizeButton.disabled = false;
+      }
+    },
+    onDeleteMaster: async (masterId) => {
+      const confirmed = await ui.showCustomConfirm('この賞品マスターを削除しますか？');
+      if (!confirmed) return;
+      try {
+        await api.deletePrizeMaster(masterId, groupId);
+        ui.showToast('削除しました');
+        const masters = await api.getPrizeMasters(groupId);
+        ui.renderPrizeMasterList(masters, false);
+      } catch (error) {
+        ui.showToast(error.error || '削除に失敗しました');
+      }
+    },
+  };
+  ui.openPrizeMasterModal(handlers);
+  const masters = await api.getPrizeMasters(groupId);
+  ui.renderPrizeMasterList(masters, false);
+}
+
+export async function openPasswordResetManager(groupId) {
+  if (!groupId) return;
+  const requests = await api.getPasswordRequests(groupId);
+  const handlers = {
+    onApproveReset: async (memberId, gId, requestId) => {
+      const confirmed = await ui.showCustomConfirm('このユーザーの合言葉を削除しますか？');
+      if (!confirmed) return;
+      try {
+        await api.approvePasswordReset(memberId, gId, requestId);
+        ui.showToast('合言葉を削除しました。');
+        const updatedRequests = await api.getPasswordRequests(gId);
+        renderPasswordRequests(updatedRequests);
+        showPasswordResetNotification(updatedRequests);
+        if (updatedRequests.length === 0) {
+          closePasswordResetRequestModal();
+        }
+        window.dispatchEvent(new CustomEvent('dashboardUpdated'));
+      } catch (error) {
+        ui.showToast(error.error || '削除に失敗しました');
+      }
+    },
+  };
+  openPasswordResetRequestModal(requests, handlers);
+}
+
 export function initEventDashboard() {
   if (elements.eventList) {
     elements.eventList.addEventListener('click', async (e) => {
@@ -181,95 +263,7 @@ export function initEventDashboard() {
     });
   }
 
-  if (elements.dashboardView) {
-    elements.dashboardView.addEventListener('click', async (e) => {
-      if (e.target.id === 'goToGroupSettingsButton') {
-        if (state.currentGroupId) {
-          await openGroupSettingsFor(state.currentGroupId);
-        }
-      }
-      if (e.target.id === 'goToPrizeMasterButton') {
-        if (state.currentGroupId) {
-          processedMasterPrizeFile = null;
-          const handlers = {
-            onAddMaster: async () => {
-              const name = ui.elements.addMasterPrizeNameInput.value.trim();
-              const rank = ui.elements.prizeMasterModal.querySelector('.prize-rank-selector').dataset.rank;
-              if (!name || !processedMasterPrizeFile) {
-                return alert('賞品名と画像を選択してください');
-              }
-              try {
-                ui.elements.addMasterPrizeButton.disabled = true;
-                const {signedUrl, imageUrl} = await api.generatePrizeMasterUploadUrl(state.currentGroupId, processedMasterPrizeFile.type);
-                await fetch(signedUrl, {method: 'PUT', headers: {'Content-Type': processedMasterPrizeFile.type}, body: processedMasterPrizeFile});
-                await api.addPrizeMaster(state.currentGroupId, name, imageUrl, rank);
-                alert('賞品マスターを追加しました。');
-                const masters = await api.getPrizeMasters(state.currentGroupId);
-                ui.renderPrizeMasterList(masters, false);
-                ui.elements.addMasterPrizeNameInput.value = '';
-                ui.elements.addMasterPrizeImageInput.value = '';
-                processedMasterPrizeFile = null;
-                if (ui.elements.addMasterPrizeImagePreview) {
-                  ui.elements.addMasterPrizeImagePreview.src = '';
-                  ui.elements.addMasterPrizeImagePreview.style.display = 'none';
-                }
-                if (ui.elements.addMasterPrizePlaceholder) {
-                  ui.elements.addMasterPrizePlaceholder.style.display = 'flex';
-                }
-              } catch (error) {
-                alert(error.error);
-              } finally {
-                ui.elements.addMasterPrizeButton.disabled = false;
-              }
-            },
-            onDeleteMaster: async (masterId) => {
-              if (!confirm('この賞品マスターを削除しますか？')) return;
-              try {
-                await api.deletePrizeMaster(masterId, state.currentGroupId);
-                alert('削除しました');
-                const masters = await api.getPrizeMasters(state.currentGroupId);
-                ui.renderPrizeMasterList(masters, false);
-              } catch (error) {
-                alert(error.error);
-              }
-            },
-          };
-          ui.openPrizeMasterModal(handlers);
-          const masters = await api.getPrizeMasters(state.currentGroupId);
-          ui.renderPrizeMasterList(masters, false);
-        }
-      }
-      if (e.target.id === 'goToMemberManagementButton') {
-        if (state.currentGroupId) {
-          router.navigateTo(`/admin/groups/${state.currentGroupId}/members`);
-        }
-      }
-      if (e.target.id === 'showPasswordResetRequestsButton') {
-        if (state.currentGroupId) {
-          const requests = await api.getPasswordRequests(state.currentGroupId);
-          const handlers = {
-            onApproveReset: async (memberId, groupId, requestId) => {
-              if (!confirm('このユーザーの合言葉を削除しますか？')) return;
-              try {
-                await api.approvePasswordReset(memberId, groupId, requestId);
-                alert('合言葉を削除しました。');
-                const updatedRequests = await api.getPasswordRequests(groupId);
-                renderPasswordRequests(updatedRequests);
-                showPasswordResetNotification(updatedRequests);
-                if (updatedRequests.length === 0) {
-                  closePasswordResetRequestModal();
-                }
-              } catch (error) {
-                alert(error.error);
-              }
-            },
-          };
-          openPasswordResetRequestModal(requests, handlers);
-        }
-      }
-    });
-  }
-
+  // dashboardView 全体のイベントリスナーはReact側で処理するため削除しました
   // ★★★ ここからが修正点 ★★★
   if (ui.elements.prizeMasterModal) {
     ui.elements.prizeMasterModal.addEventListener('click', (e) => {

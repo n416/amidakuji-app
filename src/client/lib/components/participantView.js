@@ -63,40 +63,44 @@ const handleOpenProfileModal = async () => {
   }
 };
 
-const elements = {
-  participantView: document.getElementById('participantView'),
-  participantEventName: document.getElementById('participantEventName'),
-  backToGroupEventListLink: document.getElementById('backToGroupEventListLink'),
-  nameEntrySection: document.getElementById('nameEntrySection'),
-  nameInput: document.getElementById('nameInput'),
-  confirmNameButton: document.getElementById('confirmNameButton'),
-  suggestionList: document.getElementById('suggestionList'),
-  participantControlPanel: document.getElementById('participantControlPanel'),
-  welcomeName: document.getElementById('welcomeName'),
-  goToAmidaButton: document.getElementById('goToAmidaButton'),
-  setPasswordButton: document.getElementById('setPasswordButton'),
-  editProfileButton: document.getElementById('editProfileButton'),
-  participantLogoutButton: document.getElementById('participantLogoutButton'),
-  deleteMyAccountButton: document.getElementById('deleteMyAccountButton'),
-  otherEventsSection: document.getElementById('otherEventsSection'),
-  otherEventsList: document.getElementById('otherEventsList'),
-  joinSection: document.getElementById('joinSection'),
-  backToControlPanelButton: document.getElementById('backToControlPanelButton'),
-  prizeDisplay: document.getElementById('prizeDisplay'),
-  slotList: document.getElementById('slotList'),
-  joinButton: document.getElementById('joinButton'),
-  resultSection: document.getElementById('resultSection'),
-  participantCanvas: document.getElementById('participantCanvas'),
-  myResult: document.getElementById('myResult'),
-  allResultsContainer: document.getElementById('allResultsContainer'),
-  shareButton: document.getElementById('shareButton'),
-  backToControlPanelFromResultButton: document.getElementById('backToControlPanelFromResultButton'),
-  acknowledgeButton: document.getElementById('acknowledgeButton'),
-  showAcknowledgedEventsCheckbox: document.getElementById('showAcknowledgedEvents'),
-  staticAmidaView: document.getElementById('staticAmidaView'),
-  deleteParticipantWaitingButton: document.getElementById('deleteParticipantWaitingButton'),
-  backToDashboardFromWaitingButton: document.getElementById('backToDashboardFromWaitingButton'),
-};
+let elements = {};
+
+export function bindParticipantElements() {
+  elements = {
+    participantView: document.getElementById('participantView'),
+    participantEventName: document.getElementById('participantEventName'),
+    backToGroupEventListLink: document.getElementById('backToGroupEventListLink'),
+    nameEntrySection: document.getElementById('nameEntrySection'),
+    nameInput: document.getElementById('nameInput'),
+    confirmNameButton: document.getElementById('confirmNameButton'),
+    suggestionList: document.getElementById('suggestionList'),
+    participantControlPanel: document.getElementById('participantControlPanel'),
+    welcomeName: document.getElementById('welcomeName'),
+    goToAmidaButton: document.getElementById('goToAmidaButton'),
+    setPasswordButton: document.getElementById('setPasswordButton'),
+    editProfileButton: document.getElementById('editProfileButton'),
+    participantLogoutButton: document.getElementById('participantLogoutButton'),
+    deleteMyAccountButton: document.getElementById('deleteMyAccountButton'),
+    otherEventsSection: document.getElementById('otherEventsSection'),
+    otherEventsList: document.getElementById('otherEventsList'),
+    joinSection: document.getElementById('joinSection'),
+    backToControlPanelButton: document.getElementById('backToControlPanelButton'),
+    prizeDisplay: document.getElementById('prizeDisplay'),
+    slotList: document.getElementById('slotList'),
+    joinButton: document.getElementById('joinButton'),
+    resultSection: document.getElementById('resultSection'),
+    participantCanvas: document.getElementById('participantCanvas'),
+    myResult: document.getElementById('myResult'),
+    allResultsContainer: document.getElementById('allResultsContainer'),
+    shareButton: document.getElementById('shareButton'),
+    backToControlPanelFromResultButton: document.getElementById('backToControlPanelFromResultButton'),
+    acknowledgeButton: document.getElementById('acknowledgeButton'),
+    showAcknowledgedEventsCheckbox: document.getElementById('showAcknowledgedEvents'),
+    staticAmidaView: document.getElementById('staticAmidaView'),
+    deleteParticipantWaitingButton: document.getElementById('deleteParticipantWaitingButton'),
+    backToDashboardFromWaitingButton: document.getElementById('backToDashboardFromWaitingButton'),
+  };
+}
 
 function handleShareResult() {
   if (!state.currentEventId || !state.currentParticipantName) return;
@@ -538,6 +542,7 @@ export async function initializeParticipantView(eventId, isShare, sharedParticip
 }
 
 export function initParticipantView() {
+  bindParticipantElements();
   // ▼▼▼ 修正: backToDashboardHandler を関数の先頭に移動 ▼▼▼
   const backToDashboardHandler = async () => {
     try {
@@ -949,14 +954,14 @@ export function initParticipantView() {
 
   if (elements.deleteParticipantWaitingButton)
     elements.deleteParticipantWaitingButton.addEventListener('click', async () => {
-      if (!confirm('このイベントへの参加を取り消しますか？')) return;
+      if (!(await ui.showCustomConfirm('このイベントへの参加を取り消しますか？'))) return;
       try {
         await api.deleteParticipant(state.currentEventId, state.currentParticipantToken);
-        alert('参加を取り消しました。');
-        window.location.reload();
+        ui.showToast('参加を取り消しました。');
+        setTimeout(() => window.location.reload(), 1500);
       } catch (error) {
         if (!handleInvalidTokenError(error)) {
-          alert(error.error);
+          ui.showToast(error.error || '参加の取り消しに失敗しました。');
         }
       }
     });

@@ -123,6 +123,45 @@ members.delete('/members/:memberId', async (c) => {
     const memberData = db.firestoreToJson(doc);
     if (memberData.deleteToken !== token) return c.json({ error: 'Unauthorized' }, 403);
 
+    // 参加中のイベント（pending）から名前を削除する
+    const eventsQuery = {
+      from: [{ collectionId: 'events' }],
+      where: {
+        compositeFilter: {
+          op: 'AND',
+          filters: [
+            { fieldFilter: { field: { fieldPath: 'groupId' }, op: 'EQUAL', value: { stringValue: groupId } } },
+            { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'pending' } } }
+          ]
+        }
+      }
+    };
+    const eventsRes = await db.runQuery('', eventsQuery);
+    if (eventsRes && eventsRes.length > 0) {
+      for (const item of eventsRes) {
+        if (!item.document) continue;
+        const evData = db.firestoreToJson(item.document);
+        const nameParts = item.document.name.split('/');
+        const evId = nameParts[nameParts.length - 1];
+
+        if (evData.participants && Array.isArray(evData.participants)) {
+          const idx = evData.participants.findIndex((p: any) => p.memberId === memberId);
+          if (idx !== -1) {
+            evData.participants[idx].name = null;
+            evData.participants[idx].memberId = null;
+            evData.participants[idx].iconUrl = null;
+            evData.participants[idx].color = null;
+            
+            let updatePayload: any = { participants: evData.participants };
+            if (evData.doodles && evData.doodles.length > 0) {
+              updatePayload.doodles = evData.doodles.filter((d: any) => d.memberId !== memberId);
+            }
+            await db.patchDocument(`events/${evId}`, updatePayload);
+          }
+        }
+      }
+    }
+
     await db.deleteDocument(`groups/${groupId}/members/${memberId}`);
     return c.json({ message: 'Account deleted' }, 200);
   } catch (error) {
@@ -280,6 +319,45 @@ members.delete('/groups/:groupId/members/:memberId', requireAuth, async (c) => {
     const groupDoc = await db.getDocument(`groups/${groupId}`);
     if (!groupDoc || db.firestoreToJson(groupDoc).ownerId !== user.targetUserId) {
       return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    // 参加中のイベント（pending）から名前を削除する
+    const eventsQuery = {
+      from: [{ collectionId: 'events' }],
+      where: {
+        compositeFilter: {
+          op: 'AND',
+          filters: [
+            { fieldFilter: { field: { fieldPath: 'groupId' }, op: 'EQUAL', value: { stringValue: groupId } } },
+            { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'pending' } } }
+          ]
+        }
+      }
+    };
+    const eventsRes = await db.runQuery('', eventsQuery);
+    if (eventsRes && eventsRes.length > 0) {
+      for (const item of eventsRes) {
+        if (!item.document) continue;
+        const evData = db.firestoreToJson(item.document);
+        const nameParts = item.document.name.split('/');
+        const evId = nameParts[nameParts.length - 1];
+
+        if (evData.participants && Array.isArray(evData.participants)) {
+          const idx = evData.participants.findIndex((p: any) => p.memberId === memberId);
+          if (idx !== -1) {
+            evData.participants[idx].name = null;
+            evData.participants[idx].memberId = null;
+            evData.participants[idx].iconUrl = null;
+            evData.participants[idx].color = null;
+            
+            let updatePayload: any = { participants: evData.participants };
+            if (evData.doodles && evData.doodles.length > 0) {
+              updatePayload.doodles = evData.doodles.filter((d: any) => d.memberId !== memberId);
+            }
+            await db.patchDocument(`events/${evId}`, updatePayload);
+          }
+        }
+      }
     }
 
     await db.deleteDocument(`groups/${groupId}/members/${memberId}`);

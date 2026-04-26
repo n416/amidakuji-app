@@ -30,20 +30,22 @@
 }
 
 .broadcast-header button {
-  background-color: transparent;
+  background-color: var(--white-color);
   border: 1px solid var(--border-color);
   color: var(--text-color);
+  box-shadow: 0 1px 3px var(--shadow-color);
   padding: 8px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   border-radius: 4px;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   font-size: 14px;
   white-space: nowrap;
 }
 .broadcast-header button:hover {
-  background-color: var(--shadow-color);
+  background-color: var(--light-bg-color);
+  border-color: #bbb;
 }
 
 /* スマートフォン向けのスタイル */

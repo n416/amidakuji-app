@@ -6,6 +6,7 @@ import {prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImage
 import {Particle, createSparks, celebrate} from './animation/effects.js';
 
 let prizeFadeAnimationId;
+let currentPrizeAlpha = 0;
 
 // ★★★★★★★★★★★★★★★★★★★★★★★★★★★
 // ★★★ ここからが修正点 ★★★
@@ -33,8 +34,9 @@ function drawPrizesOnly(targetCtx, hidePrizes) {
     const isRevealed = state.revealedPrizes.some((r) => r.prizeIndex === i);
     if (!isRevealed) {
       const x = participantSpacing * (i + 1);
-      const prizeName = hidePrizes ? '' : prize.name || '';
-      const prizeImage = !hidePrizes && prize.imageUrl ? animator.prizeImages[prize.imageUrl] : null;
+      const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
+      const prizeName = hidePrizes ? '？？？' : actualPrizeName || '';
+      const prizeImage = !hidePrizes && typeof prize === 'object' && prize.imageUrl ? animator.prizeImages[prize.imageUrl] : null;
 
       const prizeImageHeight = 35;
       const prizeAreaTopMargin = 30;
@@ -63,14 +65,21 @@ export function fadePrizes(targetCtx, show) {
 
   const duration = 200;
   let start = null;
+  const startAlpha = currentPrizeAlpha;
+  const endAlpha = show ? 1 : 0;
+
+  if (startAlpha === endAlpha) {
+    if (!show) drawPrizesOnly(targetCtx, true);
+    return;
+  }
 
   function step(timestamp) {
     if (!start) start = timestamp;
     const progress = timestamp - start;
     const ratio = Math.min(progress / duration, 1);
 
-    // Fade-in: 0 to 1, Fade-out: 1 to 0
-    const alpha = show ? ratio : 1 - ratio;
+    const alpha = startAlpha + (endAlpha - startAlpha) * ratio;
+    currentPrizeAlpha = alpha;
 
     targetCtx.globalAlpha = alpha;
     drawPrizesOnly(targetCtx, false); // Always draw names when fading in/out
@@ -79,6 +88,7 @@ export function fadePrizes(targetCtx, show) {
     if (progress < duration) {
       prizeFadeAnimationId = requestAnimationFrame(step);
     } else {
+      currentPrizeAlpha = endAlpha;
       // Ensure final state is drawn correctly
       if (!show) {
         drawPrizesOnly(targetCtx, true);

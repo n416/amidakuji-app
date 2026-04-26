@@ -76,11 +76,11 @@ export const getMemberSuggestions = (groupId, q) => request(`/api/groups/${group
 export const getMemberDetails = (groupId, memberId) => request(`/api/members/${memberId}?groupId=${groupId}`);
 export const deleteMemberAccount = (groupId, memberId, token) => request(`/api/members/${memberId}`, 'DELETE', {groupId}, {'x-auth-token': token});
 export const requestPasswordDeletion = (memberId, groupId) => request(`/api/members/${memberId}/request-password-deletion`, 'POST', {groupId});
-export const generateUploadUrl = (memberId, fileType, groupId, token) => request(`/api/members/${memberId}/generate-upload-url`, 'POST', {fileType, groupId}, {'x-auth-token': token});
+export const generateUploadUrl = (memberId, fileType, fileHash, token) => request(`/api/members/${memberId}/generate-upload-url`, 'POST', {fileType, fileHash}, {'x-auth-token': token});
 export const updateProfile = (memberId, profileData, groupId, token) => request(`/api/members/${memberId}/profile`, 'PUT', {...profileData, groupId}, {'x-auth-token': token});
 export const setPassword = (memberId, password, groupId, token) => request(`/api/members/${memberId}/set-password`, 'POST', {password, groupId}, {'x-auth-token': token});
 export const getPrizeMasters = (groupId) => request(`/api/groups/${groupId}/prize-masters`);
-export const generatePrizeMasterUploadUrl = (groupId, fileType) => request(`/api/groups/${groupId}/prize-masters/generate-upload-url`, 'POST', {fileType});
+export const generatePrizeMasterUploadUrl = (groupId, fileType, fileHash) => request(`/api/groups/${groupId}/prize-masters/generate-upload-url`, 'POST', {fileType, fileHash});
 export const addPrizeMaster = (groupId, name, imageUrl, rank) => request(`/api/groups/${groupId}/prize-masters`, 'POST', {name, imageUrl, rank});
 export const deletePrizeMaster = (masterId, groupId) => request(`/api/prize-masters/${masterId}`, 'DELETE', {groupId});
 export const requestAdminAccess = () => request('/api/admin/request', 'POST');

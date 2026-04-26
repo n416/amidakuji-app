@@ -248,6 +248,14 @@ participants.post('/events/:eventId/join-slot', async (c) => {
       return c.json({ error: 'この参加枠は既に埋まっているか、無効です。' }, 409);
     }
 
+    const oldIndex = newParticipants.findIndex((p: any) => p.memberId === memberId);
+    if (oldIndex !== -1) {
+      newParticipants[oldIndex].name = null;
+      newParticipants[oldIndex].memberId = null;
+      newParticipants[oldIndex].iconUrl = null;
+      newParticipants[oldIndex].color = null;
+    }
+
     newParticipants[slot].name = memberData.name;
     newParticipants[slot].memberId = memberId;
     newParticipants[slot].iconUrl = memberData.iconUrl;
@@ -289,6 +297,15 @@ participants.post('/events/:eventId/verify-password', async (c) => {
       if (slot < 0 || slot >= newParticipants.length || newParticipants[slot].name !== null) {
         return c.json({ error: 'この参加枠は既に埋まっているか、無効です。' }, 409);
       }
+
+      const oldIndex = newParticipants.findIndex((p: any) => p.memberId === memberId);
+      if (oldIndex !== -1) {
+        newParticipants[oldIndex].name = null;
+        newParticipants[oldIndex].memberId = null;
+        newParticipants[oldIndex].iconUrl = null;
+        newParticipants[oldIndex].color = null;
+      }
+
       newParticipants[slot].name = memberData.name;
       newParticipants[slot].memberId = memberId;
       newParticipants[slot].iconUrl = memberData.iconUrl;
