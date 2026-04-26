@@ -24,7 +24,20 @@ export const BroadcastView: React.FC = () => {
   // Real-time state from animation results
   const [revealedPrizes, setRevealedPrizes] = useState<any[]>([]);
 
+  // カスタム確認モーダル・トースト
+  const [showConfirmModal, setShowConfirmModal] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => {} });
+  const [toastMessage, setToastMessage] = useState<string>('');
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const confirmAction = (message: string, onConfirm: () => void) => {
+    setShowConfirmModal({ isOpen: true, message, onConfirm });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,15 +110,17 @@ export const BroadcastView: React.FC = () => {
 
   const handleStartEvent = async () => {
     if (!eventId) return;
-    if (!window.confirm('イベントを開始しますか？\n開始後は新規参加ができなくなります。')) return;
-    try {
-      await api.startEvent(eventId);
-      const data = await api.getEvent(eventId);
-      setEventData(data);
-      state.setCurrentLotteryData(data);
-    } catch (e: any) {
-      alert(`エラー: ${e.error}`);
-    }
+    confirmAction('イベントを開始しますか？\n開始後は新規参加ができなくなります。', async () => {
+      setShowConfirmModal(prev => ({ ...prev, isOpen: false }));
+      try {
+        await api.startEvent(eventId);
+        const data = await api.getEvent(eventId);
+        setEventData(data);
+        state.setCurrentLotteryData(data);
+      } catch (e: any) {
+        showToast(`エラー: ${e.error}`);
+      }
+    });
   };
 
   const url = groupData && groupData.customUrl ? `${window.location.origin}/g/${groupData.customUrl}/${eventId}` : `${window.location.origin}/events/${eventId}`;
@@ -248,6 +263,27 @@ export const BroadcastView: React.FC = () => {
           </div>
         </aside>
       </div>
+
+      {/* 確認モーダル */}
+      {showConfirmModal.isOpen && (
+        <div className="modal" style={{display: 'block', zIndex: 10000}}>
+          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+            <h3>確認</h3>
+            <p className="confirm-message">{showConfirmModal.message}</p>
+            <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+              <button className="secondary-btn" onClick={() => setShowConfirmModal(prev => ({ ...prev, isOpen: false }))}>キャンセル</button>
+              <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* トースト通知 */}
+      {toastMessage && (
+        <div className="toast-notification">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 };

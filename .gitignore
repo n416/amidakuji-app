@@ -5,3 +5,12 @@ serviceAccountKey.json
 .dev.vars
 
 .wrangler
+
+# ビルド成果物
+dist/
+
+# TypeScriptビルドキャッシュ
+tsconfig.tsbuildinfo
+
+# SCSSソースマップ
+*.css.map

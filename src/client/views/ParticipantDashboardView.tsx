@@ -177,12 +177,13 @@ export const ParticipantDashboardView: React.FC = () => {
   };
 
   const handleLogout = () => {
-    if (window.confirm('ログアウトしますか？')) {
+    confirmAction('ログアウトしますか？', () => {
       state.clearParticipantState();
       setIsLoggedIn(false);
       setParticipantName('');
       setParticipantId('');
-    }
+      setShowConfirmModal(prev => ({ ...prev, isOpen: false }));
+    });
   };
 
   const handleDeleteAccount = async () => {

@@ -126,3 +126,10 @@
 .cropper-container img {
   max-width: 100%;
 }
+
+// 確認モーダルのメッセージテキスト
+.confirm-message {
+  white-space: pre-wrap;
+  margin: 12px 0;
+  line-height: 1.6;
+}
