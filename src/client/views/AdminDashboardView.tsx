@@ -12,6 +12,7 @@ export const AdminDashboardView: React.FC = () => {
   const [groupAdmins, setGroupAdmins] = useState<any[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState<{ isOpen: boolean, message: string, onConfirm: () => void }>({ isOpen: false, message: '', onConfirm: () => {} });
   const [toastMessage, setToastMessage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -37,33 +38,39 @@ export const AdminDashboardView: React.FC = () => {
 
   const fetchPendingRequests = async () => {
     try {
+      setErrorMessage(null);
       const data = await api.getAdminRequests();
       setPendingRequests(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to fetch pending requests', e);
+      if (e.error) setErrorMessage(e.error);
     }
   };
 
   const fetchGroupAdmins = async (cursor: any = null, search = groupAdminSearch) => {
     try {
+      setErrorMessage(null);
       const data = await api.getGroupAdmins(cursor, search);
       setGroupAdmins((data as any)?.admins || []);
       setGroupAdminNextCursor((data as any)?.lastVisible);
       setGroupAdminHasNext((data as any)?.hasNextPage || false);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to fetch group admins', e);
+      if (e.error) setErrorMessage(e.error);
       setGroupAdmins([]);
     }
   };
 
   const fetchSystemAdmins = async (cursor: any = null, search = systemAdminSearch) => {
     try {
+      setErrorMessage(null);
       const data = await api.getSystemAdmins(cursor, search);
       setSystemAdmins(data?.admins || []);
       setSystemAdminNextCursor(data?.lastVisible);
       setSystemAdminHasNext(data?.hasNextPage || false);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to fetch system admins', e);
+      if (e.error) setErrorMessage(e.error);
       setSystemAdmins([]);
     }
   };
@@ -154,6 +161,14 @@ export const AdminDashboardView: React.FC = () => {
   return (
     <div id="adminDashboard" className="view-container">
       <h2>システム管理ダッシュボード</h2>
+      {errorMessage && (
+        <div className="error-banner">
+          <strong>アクセスエラー:</strong> {errorMessage}
+          <p className="mt-10 mb-0 text-09em">
+            システム管理者権限がありません。Firestoreでご自身の role を system_admin に変更するか、管理者に権限を申請してください。
+          </p>
+        </div>
+      )}
       <div className="controls">
         <h3>管理者申請一覧</h3>
         <ul id="pendingRequestsList" className="item-list">

@@ -49,7 +49,7 @@ export const Header: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('/auth/logout');
+      await api.logout();
       window.location.href = '/';
     } catch (e) {
       console.error(e);
