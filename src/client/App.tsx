@@ -18,8 +18,6 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { TutorialEngine } from './tutorial/TutorialEngine';
 import { useSelector } from 'react-redux';
 import * as api from './lib/api';
-import { initFirebase } from './lib/firebase';
-import { signInAnonymously } from 'firebase/auth';
 
 const App: React.FC = () => {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
@@ -39,8 +37,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const initApp = async () => {
       try {
-        const { auth } = await initFirebase();
-        signInAnonymously(auth).catch(console.error);
+        const configRes = await fetch('/api/config');
+        const firebaseConfig = await configRes.json();
+        // @ts-ignore
+        if (!window.firebase.apps.length) {
+          // @ts-ignore
+          window.firebase.initializeApp(firebaseConfig);
+        }
+        // @ts-ignore
+        window.firebase.auth().signInAnonymously().catch(console.error);
 
         const emojiRes = await fetch('/api/emoji-map');
         // @ts-ignore

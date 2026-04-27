@@ -4,8 +4,6 @@ import { RootState } from '../../store';
 import { setCurrentGroupPrizeMasters } from '../../store/adminSlice';
 import { X, ImagePlus, Star, Trash2 } from 'lucide-react';
 import * as api from '../../lib/api';
-import Cropper from 'cropperjs';
-import 'cropperjs/dist/cropper.css';
 
 interface PrizeMasterModalProps {
   groupId: string;
@@ -49,12 +47,15 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
       if (cropperInstanceRef.current) {
         cropperInstanceRef.current.destroy();
       }
-      cropperInstanceRef.current = new Cropper(cropperImageRef.current, {
-        aspectRatio: 1,
-        viewMode: 1,
-        background: false,
-        autoCropArea: 1,
-      } as any);
+      const Cropper = (window as any).Cropper;
+      if (Cropper) {
+        cropperInstanceRef.current = new Cropper(cropperImageRef.current, {
+          aspectRatio: 1,
+          viewMode: 1,
+          background: false,
+          autoCropArea: 1,
+        });
+      }
     }
     return () => {
       if (cropperInstanceRef.current) {
