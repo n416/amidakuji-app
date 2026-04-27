@@ -58,14 +58,7 @@ npm run scss
 
 ## ビルド・デプロイ方法
 
-### 1. スタイルシート (SCSS) のビルド
-本番ビルド前に、SCSS の変更を `public/style.css` に反映させる必要があります。
-
-```bash
-npm run build:css
-```
-
-### 2. 本番環境（Cloudflare）へのデプロイ
+### 1. 本番環境（Cloudflare）へのデプロイ
 TypeScriptの型チェック、Viteによるフロントエンド・バックエンド統合ビルドを行った後、Wranglerを使用して Cloudflare Workers へデプロイします。
 
 ```bash

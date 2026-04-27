@@ -6,8 +6,6 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "deploy": "wrangler deploy",
-    "scss": "sass --watch scss:public",
-    "build:css": "sass scss:public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
