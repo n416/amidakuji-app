@@ -15,6 +15,8 @@ export interface AnimatorState {
   context: CanvasRenderingContext2D | null;
   lastContainerWidth: number;
   lastContainerHeight: number;
+  containerElement: HTMLElement | null;
+  resizeObserver: ResizeObserver | null;
   lotteryData: LotteryData | null; 
   revealedPrizes: RevealedPrize[];
   setRevealedPrizesCallback: ((prizes: RevealedPrize[]) => void) | null;
@@ -31,6 +33,8 @@ export const animator: AnimatorState & { readonly panzoom: ReturnType<typeof imp
   context: null,
   lastContainerWidth: 0,
   lastContainerHeight: 0,
+  containerElement: null,
+  resizeObserver: null,
   get panzoom() {
     if (!this.context) return null;
     return this.context.canvas.id === 'adminCanvas' ? adminPanzoom : participantPanzoom;
@@ -84,6 +88,9 @@ export function stopAnimation() {
 
 export function clearAnimationState() {
   stopAnimation();
+  if (animator.resizeObserver) {
+    animator.resizeObserver.disconnect();
+  }
   animator.tracers = [];
   animator.icons = {};
   animator.prizeImages = {};
@@ -92,6 +99,8 @@ export function clearAnimationState() {
   animator.context = null;
   animator.lastContainerWidth = 0;
   animator.lastContainerHeight = 0;
+  animator.containerElement = null;
+  animator.resizeObserver = null;
 }
 
 function updateTracerPosition(tracer: Tracer, speed: number) {
@@ -201,33 +210,6 @@ function animationLoop() {
     stopAnimation();
     return;
   }
-  const container = targetCtx.canvas.closest('.canvas-panzoom-container');
-  if (!container) {
-    stopAnimation();
-    return;
-  }
-  const currentContainerWidth = container.clientWidth;
-  const currentContainerHeight = getTargetHeight(container);
-  
-  // コンテナのサイズが変更された場合はパスを再計算
-  if (currentContainerWidth !== animator.lastContainerWidth || currentContainerHeight !== animator.lastContainerHeight) {
-    const allLines = [...(animator.lotteryData!.lines || []), ...(animator.lotteryData!.doodles || [])];
-    const allPaths = calculateAllPaths(animator.lotteryData!.participants, allLines, currentContainerWidth, currentContainerHeight, container);
-
-    animator.tracers.forEach((tracer: Tracer) => {
-      const newPath = allPaths[tracer.slot];
-      if (newPath) {
-        tracer.path = newPath;
-        if (tracer.isFinished) {
-          const finalPoint = newPath[newPath.length - 1];
-          tracer.x = finalPoint.x;
-          tracer.y = finalPoint.y;
-        }
-      }
-    });
-    animator.lastContainerWidth = currentContainerWidth;
-    animator.lastContainerHeight = currentContainerHeight;
-  }
   const numParticipants = animator.lotteryData!.participants.length;
   const baseSpeed = 4;
   const reductionFactor = Math.min(0.5, Math.floor(Math.max(0, numParticipants - 10) / 10) * 0.1);
@@ -305,8 +287,39 @@ export async function startAnimation(targetCtx: CanvasRenderingContext2D, userNa
   console.log('[Animation] participantsToAnimate:', participantsToAnimate);
   await preloadPrizeImages(animator.lotteryData.prizes);
   await preloadIcons(participantsToAnimate);
-  const container = targetCtx.canvas.closest('.canvas-panzoom-container');
+  const container = targetCtx.canvas.closest('.canvas-panzoom-container') as HTMLElement;
   if (!container) return;
+
+  animator.containerElement = container;
+  if (animator.resizeObserver) {
+    animator.resizeObserver.disconnect();
+  }
+  animator.resizeObserver = new ResizeObserver(() => {
+    if (!animator.containerElement || !animator.lotteryData) return;
+    const newWidth = animator.containerElement.clientWidth;
+    const newHeight = getTargetHeight(animator.containerElement);
+    
+    if (newWidth !== animator.lastContainerWidth || newHeight !== animator.lastContainerHeight) {
+      const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
+      const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, newWidth, newHeight, animator.containerElement);
+
+      animator.tracers.forEach((tracer: Tracer) => {
+        const newPath = allPaths[tracer.slot];
+        if (newPath) {
+          tracer.path = newPath;
+          if (tracer.isFinished) {
+            const finalPoint = newPath[newPath.length - 1];
+            tracer.x = finalPoint.x;
+            tracer.y = finalPoint.y;
+          }
+        }
+      });
+      animator.lastContainerWidth = newWidth;
+      animator.lastContainerHeight = newHeight;
+    }
+  });
+  animator.resizeObserver.observe(container);
+
   const VIRTUAL_HEIGHT = getTargetHeight(container);
   const numParticipants = animator.lotteryData.participants.length;
   const allParticipantsWithNames = animator.lotteryData!.participants.filter((p: Participant) => p.name);
@@ -416,7 +429,7 @@ export async function resetAnimation(onComplete: (() => void) | null = null) {
   if (isAnimationRunning()) return;
   animator.onComplete = onComplete;
   updateRevealedPrizes([]);
-  const container = animator.context!.canvas.closest('.canvas-panzoom-container');
+  const container = animator.containerElement || (animator.context!.canvas.closest('.canvas-panzoom-container') as HTMLElement);
   if (!container) return;
   const VIRTUAL_HEIGHT = getTargetHeight(container);
   const allParticipantsWithNames = animator.lotteryData!.participants.filter((p: any) => p.name);
