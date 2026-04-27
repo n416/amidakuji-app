@@ -231,3 +231,25 @@ body.light-mode .toast-notification {
   flex: 1;
 }
 
+.cursor-pointer { cursor: pointer; }
+.mt-20 { margin-top: 20px; }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-10 { margin-bottom: 10px; }
+.mb-15 { margin-bottom: 15px; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.text-lg { font-size: 1.1em; }
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  display: inline-flex;
+  padding: 0;
+}
+
+.scrollable-list-wrapper {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+

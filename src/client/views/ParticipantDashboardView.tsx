@@ -264,7 +264,7 @@ export const ParticipantDashboardView: React.FC = () => {
     });
   };
 
-  if (loading) return <div className="loading-mask" style={{display: 'flex'}}>読み込み中...</div>;
+  if (loading) return <div className="loading-mask global-loading-mask">読み込み中...</div>;
   if (error) return <div className="view-container"><h2 className="error-message">{error}</h2></div>;
 
   const eventsToRender = events.filter((event) => {
@@ -279,8 +279,8 @@ export const ParticipantDashboardView: React.FC = () => {
   return (
     <div className="view-container">
       <div className="event-header">
-        <button className="button" style={{background: 'none', border: 'none', color: 'var(--primary-color)', display: 'inline-flex', padding: 0}} onClick={() => navigate(group.customUrl ? `/g/${group.customUrl}` : `/groups/${group.id}`)}>
-          <ArrowLeft size={16} style={{marginRight: '5px'}}/> イベント一覧に戻る
+        <button className="button back-btn" onClick={() => navigate(group.customUrl ? `/g/${group.customUrl}` : `/groups/${group.id}`)}>
+          <ArrowLeft size={16} className="mr-5"/> イベント一覧に戻る
         </button>
       </div>
       <h2>{group?.name} のダッシュボード</h2>
@@ -299,7 +299,7 @@ export const ParticipantDashboardView: React.FC = () => {
               />
               <button type="submit" disabled={!nameInput.trim()}>OK</button>
             </form>
-            {loginError && <p className="error-message" style={{color: 'var(--danger-color)'}}>{loginError}</p>}
+            {loginError && <p className="error-message text-danger">{loginError}</p>}
           </div>
         ) : (
           <div className="controls participant-dashboard">
@@ -322,10 +322,10 @@ export const ParticipantDashboardView: React.FC = () => {
           </div>
         )}
 
-        <div className="controls" style={{marginTop: '20px'}}>
-          <div className="list-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <div className="controls mt-20">
+          <div className="list-header flex-center-between">
             <h4>イベント一覧</h4>
-            <div className="input-group checkbox-group" style={{marginBottom: '0'}}>
+            <div className="input-group checkbox-group mb-0">
               <input 
                 type="checkbox" 
                 id="showAcknowledged" 
@@ -362,7 +362,7 @@ export const ParticipantDashboardView: React.FC = () => {
                 }
 
                 return (
-                  <li key={event.id} className="item-list-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <li key={event.id} className="item-list-item flex-center-between">
                     <span><strong>{event.eventName || '無題のイベント'}</strong> {badge}</span>
                     <button className="button" onClick={() => navigate(eventUrl)}>
                       {event.status === 'started' ? '結果を見る' : '参加する'}
@@ -377,7 +377,7 @@ export const ParticipantDashboardView: React.FC = () => {
 
       {/* グループ合言葉入力モーダル */}
       {showGroupPasswordModal && (
-        <div className="modal" style={{display: 'block'}}>
+        <div className="modal active">
           <div className="modal-content">
             <div className="password-entry-container">
               <Lock size={48} className="password-icon" />
@@ -414,7 +414,7 @@ export const ParticipantDashboardView: React.FC = () => {
 
       {/* メンバーログイン用合言葉入力モーダル */}
       {showMemberPasswordModal && (
-        <div className="modal" style={{display: 'block'}}>
+        <div className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowMemberPasswordModal(false)}>
               <X size={24} />
@@ -438,17 +438,17 @@ export const ParticipantDashboardView: React.FC = () => {
       )}
 
       {showProfileModal && (
-        <div className="modal" style={{display: 'block'}}>
+        <div className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowProfileModal(false)}>
               <X size={24} />
             </span>
             <h3>プロフィール編集</h3>
-            <div className="prize-master-form" style={{marginBottom: '15px'}}>
-              <div className="prize-master-image-dropzone" style={{margin: '0 auto'}}>
+            <div className="prize-master-form mb-15">
+              <div className="prize-master-image-dropzone mx-auto">
                 <label htmlFor="newProfileImageUpload">
-                  <img id="profileImagePreview" src={newIconFilePreview || profileIconUrlInput || undefined} alt="プレビュー" style={{display: (newIconFilePreview || profileIconUrlInput) ? 'block' : 'none'}} />
-                  <div id="profileImagePlaceholder" style={{display: (newIconFilePreview || profileIconUrlInput) ? 'none' : 'flex'}}>
+                  <img id="profileImagePreview" src={newIconFilePreview || profileIconUrlInput || undefined} alt="プレビュー" className={(newIconFilePreview || profileIconUrlInput) ? '' : 'hidden-element'} />
+                  <div id="profileImagePlaceholder" className={(newIconFilePreview || profileIconUrlInput) ? 'hidden-element' : ''}>
                     <ImagePlus size={32} />
                     <span>クリックして画像を選択</span>
                   </div>
@@ -486,20 +486,20 @@ export const ParticipantDashboardView: React.FC = () => {
       )}
 
       {showPasswordModal && (
-        <div className="modal" style={{display: 'block'}}>
+        <div className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowPasswordModal(false)}><X size={24} /></span>
             <h3>合言葉の設定</h3>
             <p>合言葉を設定すると、他の人があなたのアカウントを使うのを防げます。</p>
             <div className="input-group">
               <label>新しい合言葉:</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="flex-gap-8">
                 <input 
                   type="password" 
                   value={newPasswordInput} 
                   onChange={e => setNewPasswordInput(e.target.value)} 
                   placeholder={participantHasPassword ? "変更する場合は入力" : "新しい合言葉"}
-                  style={{ flex: 1 }}
+                  className="flex-1"
                 />
                 <button 
                   type="button" 
@@ -511,7 +511,7 @@ export const ParticipantDashboardView: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="modal-actions" style={{marginTop: '20px'}}>
+            <div className="modal-actions mt-20">
               {participantHasPassword && (
                 <button 
                   type="button" 
@@ -530,11 +530,11 @@ export const ParticipantDashboardView: React.FC = () => {
       )}
 
       {showConfirmModal.isOpen && (
-        <div className="modal" style={{display: 'block', zIndex: 10000}}>
-          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+        <div className="modal active">
+          <div className="modal-content max-w-400 text-center">
             <h3>確認</h3>
-            <p style={{whiteSpace: 'pre-wrap'}}>{showConfirmModal.message}</p>
-            <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+            <p className="confirm-message">{showConfirmModal.message}</p>
+            <div className="modal-actions center gap-15">
               <button className="secondary-btn" onClick={() => setShowConfirmModal({...showConfirmModal, isOpen: false})}>キャンセル</button>
               <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
             </div>
@@ -543,11 +543,7 @@ export const ParticipantDashboardView: React.FC = () => {
       )}
 
       {toastMessage && (
-        <div style={{
-          position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: '#333', color: '#fff', padding: '10px 20px', borderRadius: '4px',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.2)', zIndex: 99999
-        }}>
+        <div className="toast active">
           {toastMessage}
         </div>
       )}

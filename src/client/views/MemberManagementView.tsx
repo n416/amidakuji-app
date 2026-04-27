@@ -208,7 +208,7 @@ export const MemberManagementView: React.FC = () => {
     <div id="memberManagementView" className="view-container">
       <div className="event-header">
         <button onClick={() => navigate(`/admin/groups/${groupId}`)}>
-          <ArrowLeft size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} /> ダッシュボードに戻る
+          <ArrowLeft size={16} className="icon-inline mr-5" /> ダッシュボードに戻る
         </button>
       </div>
       <h2>メンバー管理</h2>
@@ -222,9 +222,9 @@ export const MemberManagementView: React.FC = () => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
-          <button className="primary-action" onClick={() => { setAddMemberNameInput(''); setShowAddMemberModal(true); }}><Plus size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} /> メンバー追加</button>
+          <button className="primary-action" onClick={() => { setAddMemberNameInput(''); setShowAddMemberModal(true); }}><Plus size={16} className="icon-inline mr-5" /> メンバー追加</button>
           <button id="bulkRegisterButton" onClick={() => { setBulkInput(''); setBulkStep(1); setShowBulkModal(true); }}>一括登録</button>
-          <button className="secondary-btn" onClick={handleCleanupEvents} style={{ display: 'none' }}>過去データ修正</button>
+          <button className="secondary-btn hidden-element" onClick={handleCleanupEvents}>過去データ修正</button>
         </div>
       </div>
       <ul className="item-list">
@@ -251,7 +251,7 @@ export const MemberManagementView: React.FC = () => {
       </ul>
 
       {showEditModal && (
-        <div className="modal" style={{ display: 'block' }}>
+        <div className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowEditModal(false)}><X size={20} /></span>
             <h3>メンバー編集</h3>
@@ -276,7 +276,7 @@ export const MemberManagementView: React.FC = () => {
       )}
 
       {showBulkModal && (
-        <div className="modal" style={{ display: 'block' }}>
+        <div className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowBulkModal(false)}><X size={20} /></span>
             <h3>メンバーの一括登録</h3>
@@ -294,14 +294,14 @@ export const MemberManagementView: React.FC = () => {
             ) : (
               <div>
                 <p>入力された名前を分析しました。内容を確認し、登録を実行してください。</p>
-                <div style={{ maxHeight: '300px', overflowY: 'auto', marginBottom: '20px' }}>
+                <div className="scrollable-list-wrapper">
                   <h4>新規登録 ({newRegs.length})</h4>
                   <ul>{newRegs.map(r => <li key={r.inputName}>"{r.inputName}" を新規登録します。</li>)}</ul>
 
                   <h4>類似候補 ({potentialMatches.length})</h4>
                   <ul>
                     {potentialMatches.map((r, i) => (
-                      <li key={r.inputName} style={{ marginBottom: '10px' }}>
+                      <li key={r.inputName} className="mb-10">
                         <p><strong>"{r.inputName}"</strong> は、既存の <strong>"{r.suggestions[0].name}"</strong> と類似しています。</p>
                         <label>
                           <input type="radio" checked={bulkResolutions[r.inputName] === 'skip'} onChange={() => setBulkResolutions({ ...bulkResolutions, [r.inputName]: 'skip' })} />
@@ -331,12 +331,12 @@ export const MemberManagementView: React.FC = () => {
       )}
 
       {confirmDeletePassword && (
-        <div className="modal" style={{ display: 'block', zIndex: 10000 }}>
-          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
-            <p style={{ fontSize: '1.1em', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>
+        <div className="modal active">
+          <div className="modal-content max-w-400 text-center">
+            <p className="confirm-message text-lg">
               メンバー「{confirmDeletePassword.name}」の合言葉を削除しますか？
             </p>
-            <div className="modal-actions" style={{ justifyContent: 'center', gap: '15px' }}>
+            <div className="modal-actions center gap-15">
               <button className="secondary-btn" onClick={() => setConfirmDeletePassword(null)}>キャンセル</button>
               <button className="primary-action danger" onClick={executeDeletePassword}>削除する</button>
             </div>
@@ -346,11 +346,11 @@ export const MemberManagementView: React.FC = () => {
 
       {/* カスタム確認モーダル */}
       {showConfirmModal.isOpen && (
-        <div className="modal" style={{ display: 'block', zIndex: 10001 }}>
-          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+        <div className="modal active z-10001">
+          <div className="modal-content max-w-400 text-center">
             <h3>確認</h3>
-            <p style={{ whiteSpace: 'pre-wrap' }}>{showConfirmModal.message}</p>
-            <div className="modal-actions" style={{ justifyContent: 'center', gap: '15px' }}>
+            <p className="confirm-message">{showConfirmModal.message}</p>
+            <div className="modal-actions center gap-15">
               <button className="secondary-btn" onClick={() => setShowConfirmModal({ isOpen: false, message: '', onConfirm: () => {} })}>キャンセル</button>
               <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
             </div>
@@ -360,8 +360,8 @@ export const MemberManagementView: React.FC = () => {
 
       {/* メンバー追加入力モーダル */}
       {showAddMemberModal && (
-        <div className="modal" style={{ display: 'block', zIndex: 10001 }}>
-          <div className="modal-content" style={{ maxWidth: '400px' }}>
+        <div className="modal active z-10001">
+          <div className="modal-content max-w-400">
             <h3>メンバー追加</h3>
             <form onSubmit={(e) => { e.preventDefault(); handleAddMember(); }} className="input-group">
               <label>追加するメンバーの名前:</label>
@@ -382,12 +382,7 @@ export const MemberManagementView: React.FC = () => {
       )}
 
       {toastMessage && (
-        <div className="toast" style={{
-          position: 'fixed', bottom: '20px', right: '20px',
-          backgroundColor: '#333', color: '#fff', padding: '12px 20px',
-          borderRadius: '8px', zIndex: 9999,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-        }}>
+        <div className="toast active">
           {toastMessage}
         </div>
       )}

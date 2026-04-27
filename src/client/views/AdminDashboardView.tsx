@@ -199,8 +199,8 @@ export const AdminDashboardView: React.FC = () => {
           )}
         </ul>
         <div className="pagination-controls" id="groupAdminPagination">
-          <button className="prev-btn" style={{ display: groupAdminPage > 0 ? 'inline-block' : 'none' }} onClick={handleGroupAdminPrev}>前へ</button>
-          <button className="next-btn" style={{ display: groupAdminHasNext ? 'inline-block' : 'none' }} onClick={handleGroupAdminNext}>次へ</button>
+          <button className={`prev-btn ${groupAdminPage > 0 ? '' : 'hidden-element'}`} onClick={handleGroupAdminPrev}>前へ</button>
+          <button className={`next-btn ${groupAdminHasNext ? '' : 'hidden-element'}`} onClick={handleGroupAdminNext}>次へ</button>
         </div>
       </div>
       
@@ -241,17 +241,17 @@ export const AdminDashboardView: React.FC = () => {
           )}
         </ul>
         <div className="pagination-controls" id="systemAdminPagination">
-          <button className="prev-btn" style={{ display: systemAdminPage > 0 ? 'inline-block' : 'none' }} onClick={handleSystemAdminPrev}>前へ</button>
-          <button className="next-btn" style={{ display: systemAdminHasNext ? 'inline-block' : 'none' }} onClick={handleSystemAdminNext}>次へ</button>
+          <button className={`prev-btn ${systemAdminPage > 0 ? '' : 'hidden-element'}`} onClick={handleSystemAdminPrev}>前へ</button>
+          <button className={`next-btn ${systemAdminHasNext ? '' : 'hidden-element'}`} onClick={handleSystemAdminNext}>次へ</button>
         </div>
       </div>
 
       {showConfirmModal.isOpen && (
-        <div className="modal" style={{display: 'block', zIndex: 10000}}>
-          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+        <div className="modal active">
+          <div className="modal-content max-w-400 text-center">
             <h3>確認</h3>
-            <p>{showConfirmModal.message}</p>
-            <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+            <p className="confirm-message">{showConfirmModal.message}</p>
+            <div className="modal-actions center gap-15">
               <button className="secondary-btn" onClick={() => setShowConfirmModal({...showConfirmModal, isOpen: false})}>キャンセル</button>
               <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
             </div>
@@ -260,11 +260,7 @@ export const AdminDashboardView: React.FC = () => {
       )}
 
       {toastMessage && (
-        <div style={{
-          position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: '#333', color: '#fff', padding: '10px 20px', borderRadius: '4px',
-          boxShadow: '0 2px 5px rgba(0,0,0,0.2)', zIndex: 99999
-        }}>
+        <div className="toast active">
           {toastMessage}
         </div>
       )}

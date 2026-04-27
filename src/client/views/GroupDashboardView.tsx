@@ -132,7 +132,7 @@ export const GroupDashboardView: React.FC = () => {
             }
             return (
               <li key={group.id} className="item-list-item list-item-link" onClick={() => navigate(`/admin/groups/${group.id}`)}>
-                <span style={{ cursor: 'pointer' }}>
+                <span className="cursor-pointer">
                   {group.name} ({dateString})
                 </span>
                 <div className="item-buttons">
@@ -146,7 +146,7 @@ export const GroupDashboardView: React.FC = () => {
       )}
 
       {showAdminRequest && (
-        <div className="controls" style={{marginTop: '20px'}} id="requestAdminControls">
+        <div className="controls mt-20" id="requestAdminControls">
           <button 
             id="requestAdminButton" 
             onClick={handleRequestAdmin}
@@ -171,21 +171,16 @@ export const GroupDashboardView: React.FC = () => {
       )}
 
       {toastMessage && (
-        <div className="toast" style={{
-          position: 'fixed', bottom: '20px', right: '20px', 
-          backgroundColor: '#333', color: '#fff', padding: '12px 20px', 
-          borderRadius: '8px', zIndex: 9999,
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-        }}>
+        <div className="toast active">
           {toastMessage}
         </div>
       )}
 
       {confirmDialog && (
-        <div className="modal" style={{ display: 'block', zIndex: 10000 }}>
-          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
-            <p style={{ fontSize: '1.1em', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>{confirmDialog.message}</p>
-            <div className="modal-actions" style={{ justifyContent: 'center', gap: '15px' }}>
+        <div className="modal active">
+          <div className="modal-content max-w-400 text-center">
+            <p className="confirm-message text-lg">{confirmDialog.message}</p>
+            <div className="modal-actions center gap-15">
               <button className="secondary-btn" onClick={() => setConfirmDialog(null)}>キャンセル</button>
               <button className="primary-action danger" onClick={() => {
                 confirmDialog.onConfirm();
