@@ -137,12 +137,19 @@ export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => 
           const p2 = this.tail[i + 1];
           const alpha = 1.0 - i / this.tail.length;
 
-          animationCtx!.strokeStyle = `rgba(${this.colorRGB}, ${alpha})`;
-          animationCtx!.lineWidth = LINE_WIDTH;
-          animationCtx!.shadowColor = `rgba(${this.colorRGB}, ${alpha})`;
-          animationCtx!.shadowBlur = 15;
           animationCtx!.lineCap = 'round';
 
+          // Pseudo-glow (thicker line, lower opacity)
+          animationCtx!.strokeStyle = `rgba(${this.colorRGB}, ${alpha * 0.3})`;
+          animationCtx!.lineWidth = LINE_WIDTH * 4;
+          animationCtx!.beginPath();
+          animationCtx!.moveTo(p1.x + currentScrollX, p1.y + currentScrollY);
+          animationCtx!.lineTo(p2.x + currentScrollX, p2.y + currentScrollY);
+          animationCtx!.stroke();
+
+          // Core line
+          animationCtx!.strokeStyle = `rgba(${this.colorRGB}, ${alpha})`;
+          animationCtx!.lineWidth = LINE_WIDTH;
           animationCtx!.beginPath();
           animationCtx!.moveTo(p1.x + currentScrollX, p1.y + currentScrollY);
           animationCtx!.lineTo(p2.x + currentScrollX, p2.y + currentScrollY);
