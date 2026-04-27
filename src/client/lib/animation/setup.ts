@@ -1,4 +1,5 @@
 // @ts-nocheck
+import Panzoom from '@panzoom/panzoom';
 import {animator, isAnimationRunning, updateRevealedPrizes} from './core';
 import {calculateAllPaths, getTargetHeight, calculatePrizeAreaHeight} from './path';
 import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes} from './drawing';
