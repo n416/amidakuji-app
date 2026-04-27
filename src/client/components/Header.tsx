@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, matchPath } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Home, HelpCircle, ChevronDown, User, LogOut, Trash2, Settings, Plus } from 'lucide-react';
 import * as api from '../lib/api';
@@ -44,14 +44,36 @@ export const Header: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    const parts = location.pathname.split('/');
-    if (parts[1] === 'admin' && parts[2] === 'groups' && parts[3] && parts[3] !== 'members') {
-      const gId = parts[3];
+    const match = matchPath('/admin/groups/:groupId/*', location.pathname);
+    if (match && match.params.groupId && match.params.groupId !== 'members') {
+      const gId = match.params.groupId;
       if (groups.some(g => g.id === gId)) {
         localStorage.setItem('lastGroupId', gId);
       }
     }
   }, [location.pathname, groups]);
+
+  useEffect(() => {
+    const headerEl = document.getElementById('header-container');
+    if (!headerEl) return;
+
+    const updateHeight = () => {
+      const height = headerEl.offsetHeight;
+      document.documentElement.style.setProperty('--header-height', `${height}px`);
+    };
+
+    // 初回実行
+    updateHeight();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight();
+    });
+    resizeObserver.observe(headerEl);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [user?.isImpersonating, isAuthenticated, isParticipantView]);
 
   const handleHomeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -95,6 +117,16 @@ export const Header: React.FC = () => {
       }
     });
   };
+
+  const getActiveGroupId = () => {
+    const match = matchPath('/admin/groups/:groupId/*', location.pathname);
+    if (match && match.params.groupId && match.params.groupId !== 'members') {
+      return match.params.groupId;
+    }
+    return localStorage.getItem('lastGroupId') || '';
+  };
+  const activeGroupId = getActiveGroupId();
+  const currentGroupName = groups.find(g => g.id === activeGroupId)?.name || 'グループ切替';
 
   return (
     <div id="header-container">
@@ -142,7 +174,7 @@ export const Header: React.FC = () => {
               <label className="group-switcher-label">グループ選択</label>
               <div id="groupSwitcher" onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}>
                 <button id="currentGroupName">
-                  {groups.find(g => g.id === window.location.pathname.split('/')[3])?.name || 'グループ切替'}
+                  {currentGroupName}
                 </button>
                 <div id="groupDropdown" className={`dropdown-content ${groupDropdownOpen ? 'open' : ''}`}>
                   <ul id="switcherGroupList">
