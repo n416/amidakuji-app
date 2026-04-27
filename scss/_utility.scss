@@ -253,3 +253,73 @@ body.light-mode .toast-notification {
   margin-bottom: 20px;
 }
 
+/* Phase 3 Utility Classes */
+.align-text-bottom { vertical-align: text-bottom; }
+.text-primary { color: var(--primary-color); }
+.text-muted { color: #6b7280; }
+.text-warning { color: #eab308; }
+.w-80 { width: 80px; }
+.w-140 { width: 140px; }
+.w-90 { width: 90%; }
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }
+.max-w-200 { max-width: 200px; }
+.max-w-800 { max-width: 800px; }
+.max-h-200 { max-height: 200px; }
+.max-h-60vh { max-height: 60vh; }
+.overflow-y-auto { overflow-y: auto; }
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-xl { font-size: 1.2em; }
+.text-2xl { font-size: 1.3em; }
+.text-sm { font-size: 12px; }
+.mt-10 { margin-top: 10px; }
+.mt-15 { margin-top: 15px; }
+.mt-30 { margin-top: 30px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-30 { margin-bottom: 30px; }
+.mr-8 { margin-right: 8px; }
+.mr-10 { margin-right: 10px; }
+.p-10 { padding: 10px; }
+.p-15-30 { padding: 15px 30px; }
+.font-bold { font-weight: bold; }
+.border-bottom-eee { border-bottom: 1px solid #eee; }
+.flex-wrap-gap-10 { display: flex; flex-wrap: wrap; gap: 10px; }
+.gap-10 { gap: 10px; }
+.relative { position: relative; }
+.absolute-top-left { position: absolute; top: 0; left: 0; }
+.pointer-events-none { pointer-events: none; }
+.block { display: block; }
+.link-btn-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+}
+.z-3060 { z-index: 3060; }
+.radius-8 { border-radius: 8px; }
+.center-absolute {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.btn-large {
+  font-size: 1.5em;
+  padding: 15px 30px;
+}
+
+.inline-flex { display: inline-flex; }
+.mr-15 { margin-right: 15px; }
+.border-ccc { border: 1px solid #ccc; }
+.h-400 { height: 400px; }
+.overflow-hidden { overflow: hidden; }
+.text-09em { font-size: 0.9em; }
+.text-20 { font-size: 20px; }
+.modal-actions-between { display: flex; justify-content: space-between; gap: 10px; margin-top: 15px; }
+.list-none { list-style: none; }
+.p-0 { padding: 0; }
+.list-item-summary { padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+.prize-master-list-item { display: flex; align-items: center; gap: 15px; cursor: pointer; padding: 10px; }
+.prize-master-thumbnail { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+.prize-master-thumbnail-placeholder { width: 50px; height: 50px; background: #eee; border-radius: 4px; display: flex; align-items: center; justify-content: center; }

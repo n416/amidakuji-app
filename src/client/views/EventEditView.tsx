@@ -355,9 +355,8 @@ export const EventEditView: React.FC = () => {
           return (
             <i 
               key={rank} 
-              className={`lucide-star ${isFilled ? 'filled' : ''}`}
+              className={`lucide-star ${isFilled ? 'filled' : ''} ${disabled ? 'disabled-star' : 'cursor-pointer'} text-20`}
               onClick={() => !disabled && onChange(rank)}
-              style={{ cursor: disabled ? 'default' : 'pointer', fontSize: '20px' }}
             >
               ★
             </i>
@@ -381,7 +380,7 @@ export const EventEditView: React.FC = () => {
     <div id="eventEditView" className="view-container">
       <div className="event-header">
         <button onClick={() => navigate(`/admin/groups/${groupId || eventData?.groupId}`)}>
-          <ArrowLeft size={16} style={{marginRight: '5px', verticalAlign: 'text-bottom'}}/> グループダッシュボードに戻る
+          <ArrowLeft size={16} className="mr-5 align-text-bottom"/> グループダッシュボードに戻る
         </button>
       </div>
       <h3>{isNewEvent ? 'イベント新規作成' : 'イベント編集'}</h3>
@@ -400,8 +399,8 @@ export const EventEditView: React.FC = () => {
             />
           </div>
           {!isNewEvent && (
-            <p style={{marginTop: '10px', fontSize: '0.9em', fontWeight: 'bold'}}>
-              現在のイベントURL: <a href={`${window.location.origin}/events/${currentEventId}`} target="_blank" rel="noopener noreferrer" style={{color: 'var(--primary-color)'}}>{`${window.location.origin}/events/${currentEventId}`}</a>
+            <p className="mt-10 font-bold text-09em">
+              現在のイベントURL: <a href={`${window.location.origin}/events/${currentEventId}`} target="_blank" rel="noopener noreferrer" className="text-primary">{`${window.location.origin}/events/${currentEventId}`}</a>
             </p>
           )}
         </div>
@@ -429,7 +428,7 @@ export const EventEditView: React.FC = () => {
                     {p.imageUrl || p.newImageFile ? (
                       <img src={p.newImageFile ? URL.createObjectURL(p.newImageFile) : p.imageUrl} alt={p.name} />
                     ) : <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="placeholder" className="placeholder" />}
-                    <input type="file" id={`prize-image-upload-${i}`} style={{display: 'none'}} accept="image/*" disabled={isStarted} onChange={e => {
+                    <input type="file" id={`prize-image-upload-${i}`} className="hidden-element" accept="image/*" disabled={isStarted} onChange={e => {
                       if (e.target.files && e.target.files[0]) {
                         setCropperModalUrl(URL.createObjectURL(e.target.files[0]));
                         setCropperCallback(() => (file: File | null) => {
@@ -462,24 +461,24 @@ export const EventEditView: React.FC = () => {
             <table className="prize-list-table">
               <thead>
                 <tr>
-                  <th style={{width: '80px'}}>画像</th>
-                  <th style={{textAlign: 'left'}}>景品名 ▲</th>
-                  <th style={{width: '80px'}}>数量</th>
-                  <th style={{width: '140px'}}>ランク</th>
-                  <th style={{textAlign: 'center', width: '80px'}}>操作</th>
+                  <th className="w-80">画像</th>
+                  <th className="text-left">景品名 ▲</th>
+                  <th className="w-80">数量</th>
+                  <th className="w-140">ランク</th>
+                  <th className="text-center w-80">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {aggregatedPrizes.map((p, i) => (
                   <tr key={i}>
-                    <td style={{textAlign: 'center'}}>
-                      <label className="prize-image-label" style={{cursor: isStarted ? 'default' : 'pointer'}}>
+                    <td className="text-center">
+                      <label className={`prize-image-label ${isStarted ? '' : 'cursor-pointer'}`}>
                         {p.imageUrl || p.newImageFile ? (
                           <img src={p.newImageFile ? URL.createObjectURL(p.newImageFile) : p.imageUrl} alt={p.name} className="prize-image-cell" />
                         ) : (
                           <div className="prize-image-cell no-image"><ImagePlus size={16} /></div>
                         )}
-                        <input type="file" style={{display: 'none'}} accept="image/*" disabled={isStarted} onChange={e => {
+                        <input type="file" className="hidden-element" accept="image/*" disabled={isStarted} onChange={e => {
                           if (e.target.files && e.target.files[0]) {
                             setCropperModalUrl(URL.createObjectURL(e.target.files[0]));
                             setCropperCallback(() => (file: File | null) => {
@@ -499,7 +498,7 @@ export const EventEditView: React.FC = () => {
                     <td>
                       {renderStars(p.rank || 'uncommon', (rank) => handleGroupPrizeChange(p.originalName, 'rank', rank), isStarted)}
                     </td>
-                    <td style={{textAlign: 'center'}}>
+                    <td className="text-center">
                       {!isStarted && <button onClick={() => handleGroupPrizeDelete(p.originalName)} className="delete-btn delete-prize-list">削除</button>}
                     </td>
                   </tr>
@@ -511,12 +510,12 @@ export const EventEditView: React.FC = () => {
 
         <div className="settings-section">
           <h4>3. 公開設定</h4>
-          <p className="description" style={{fontSize: '0.9em', color: '#666', marginBottom: '10px'}}>参加者が参加枠を選ぶ画面で、どこまで景品情報を表示するか設定します。</p>
-          <div className="input-group checkbox-group" style={{display: 'inline-flex', marginRight: '15px'}}>
+          <p className="description text-muted mb-10 text-09em">参加者が参加枠を選ぶ画面で、どこまで景品情報を表示するか設定します。</p>
+          <div className="input-group checkbox-group inline-flex mr-15">
             <input type="checkbox" id="displayPrizeName" checked={displayPrizeName} onChange={e => {setDisplayPrizeName(e.target.checked); setIsDirty(true);}} disabled={isStarted} />
             <label htmlFor="displayPrizeName">景品名を表示する</label>
           </div>
-          <div className="input-group checkbox-group" style={{display: 'inline-flex'}}>
+          <div className="input-group checkbox-group inline-flex">
             <input type="checkbox" id="displayPrizeCount" checked={displayPrizeCount} onChange={e => {setDisplayPrizeCount(e.target.checked); setIsDirty(true);}} disabled={isStarted} />
             <label htmlFor="displayPrizeCount">景品ごとの個数を表示する</label>
           </div>
@@ -556,14 +555,14 @@ export const EventEditView: React.FC = () => {
         ) : (
           <div className="settings-section">
             <h4>5. 最終準備と配信</h4>
-            <div className="final-prep-content-wrapper" style={{position: 'relative'}}>
+            <div className="final-prep-content-wrapper relative">
               {isDirty && (
                 <div className="final-prep-overlay">
                   <button id="saveForPreviewButton" className="primary-action" onClick={handleSave} disabled={saving}>変更を保存してプレビューを更新</button>
                 </div>
               )}
               <p>あみだくじを生成・プレビューし、必要に応じて調整します。</p>
-              <div className="input-group" style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+              <div className="input-group flex-wrap-gap-10">
                 <button id="showFillSlotsModalButton" onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
                 <button id="regenerateLinesButton" onClick={handleRegenerateLines} disabled={isStarted}><RefreshCw size={16}/> 線を再生成</button>
                 <button id="shufflePrizesBroadcastButton" onClick={async () => {
@@ -579,15 +578,15 @@ export const EventEditView: React.FC = () => {
                 }} disabled={isStarted}><Gift size={16}/> 景品シャッフル</button>
               </div>
               
-              <div className="canvas-panzoom-container" style={{marginTop: '15px', border: '1px solid #ccc'}}>
-                <div className="panzoom-wrapper" style={{width: '100%', height: '400px', overflow: 'hidden'}}>
-                  <canvas ref={canvasRef} style={{width: '100%', height: '100%'}}></canvas>
+              <div className="canvas-panzoom-container mt-15 border-ccc">
+                <div className="panzoom-wrapper w-100 h-400 overflow-hidden">
+                  <canvas ref={canvasRef} className="w-100 h-100"></canvas>
                 </div>
               </div>
             </div>
 
-            <div style={{marginTop: '20px', textAlign: 'center'}}>
-              <Link id="goToBroadcastViewButton" to={`/admin/event/${currentEventId}/broadcast`} className="primary-action" style={{display: 'inline-flex', alignItems: 'center', gap: '5px', textDecoration: 'none'}}>
+            <div className="mt-20 text-center">
+              <Link id="goToBroadcastViewButton" to={`/admin/event/${currentEventId}/broadcast`} className="primary-action link-btn-inline">
                 配信画面へ進む <ArrowRight size={16}/>
               </Link>
             </div>
@@ -596,15 +595,15 @@ export const EventEditView: React.FC = () => {
       </div>
 
       {showAddPrizeModal && (
-        <div id="addPrizeModal" className="modal" style={{display: 'block'}}>
+        <div id="addPrizeModal" className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={closeAddPrizeModal}><X /></span>
             <h3>景品の追加</h3>
             <div className="prize-master-form">
               <div className="prize-master-image-dropzone">
                 <label htmlFor="newPrizeImageInput">
-                  <img id="newPrizeImagePreview" src={newPrizeImageUrl || undefined} alt="プレビュー" style={{display: newPrizeImageUrl ? 'block' : 'none'}} />
-                  <div id="addPrizePlaceholder" style={{display: newPrizeImageUrl ? 'none' : 'flex'}}>
+                  <img id="newPrizeImagePreview" src={newPrizeImageUrl || undefined} alt="プレビュー" className={newPrizeImageUrl ? 'block' : 'hidden-element'} />
+                  <div id="addPrizePlaceholder" className={newPrizeImageUrl ? 'hidden-element' : ''}>
                     <ImagePlus size={32} />
                     <span>クリックして画像を選択</span>
                   </div>
@@ -624,18 +623,18 @@ export const EventEditView: React.FC = () => {
               </div>
               <div className="prize-master-inputs">
                 <input type="text" id="newPrizeNameInput" placeholder="景品名を入力" value={newPrizeName} onChange={e => setNewPrizeName(e.target.value)} />
-                <div style={{ marginTop: '10px' }}>
+                <div className="mt-10">
                   {renderStars(newPrizeRank, setNewPrizeRank, false)}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: '15px' }}>
-                  <button id="callMasterButton" className="secondary-btn" onClick={async () => {
+                <div className="modal-actions-between">
+                  <button id="callMasterButton" className="secondary-btn flex-1 p-10 text-09em" onClick={async () => {
                     try {
                       const masters = await api.getPrizeMasters(groupId || eventData?.groupId);
                       dispatch(setCurrentGroupPrizeMasters(masters));
                       setShowPrizeMasterSelectModal(true);
                     } catch(e) { showToast('マスター取得に失敗'); }
-                  }} style={{ flex: 1, padding: '10px', fontSize: '0.9em' }}>マスターから呼出</button>
-                  <button id="addPrizeOkButton" className="primary-action" onClick={addPrize} style={{ flex: 1, padding: '10px' }}>追加</button>
+                  }}>マスターから呼出</button>
+                  <button id="addPrizeOkButton" className="primary-action flex-1 p-10" onClick={addPrize}>追加</button>
                 </div>
               </div>
             </div>
@@ -644,20 +643,20 @@ export const EventEditView: React.FC = () => {
       )}
 
       {showSummaryModal && (
-        <div id="summaryModal" className="modal" style={{display: 'block'}}>
+        <div id="summaryModal" className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowSummaryModal(false)}><X /></span>
             <h3>景品集計</h3>
-            <p style={{fontSize: '1.2em'}}>合計: <strong>{prizes.length}</strong> 個</p>
-            <ul style={{listStyle: 'none', padding: 0, marginTop: '15px'}}>
+            <p className="text-xl">合計: <strong>{prizes.length}</strong> 個</p>
+            <ul className="list-none p-0 mt-15">
               {aggregatedPrizes.map((p, i) => (
-                <li key={i} style={{padding: '8px 0', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between'}}>
+                <li key={i} className="list-item-summary">
                   <span>{p.name}</span>
                   <strong>{p.quantity} 個</strong>
                 </li>
               ))}
             </ul>
-            <div className="modal-actions" style={{marginTop: '20px'}}>
+            <div className="modal-actions mt-20">
               <button className="secondary-btn" onClick={() => setShowSummaryModal(false)}>閉じる</button>
             </div>
           </div>
@@ -665,12 +664,12 @@ export const EventEditView: React.FC = () => {
       )}
 
       {showBulkAddModal && (
-        <div id="prizeBulkAddModal" className="modal" style={{display: 'block'}}>
+        <div id="prizeBulkAddModal" className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowBulkAddModal(false)}><X /></span>
             <h3>テキスト流し込みで景品を追加</h3>
             <p>1行に1つの景品名を入力してください。「景品名: 個数」の形式でも入力可能です。<br/>例:<br/>A賞<br/>B賞: 3<br/>ハズレ: 10</p>
-            <textarea id="prizeBulkTextarea" rows={10} style={{width: '100%', marginTop: '10px'}} placeholder="ここにテキストを入力..." value={bulkPrizeText} onChange={e => setBulkPrizeText(e.target.value)}></textarea>
+            <textarea id="prizeBulkTextarea" rows={10} className="w-100 mt-10" placeholder="ここにテキストを入力..." value={bulkPrizeText} onChange={e => setBulkPrizeText(e.target.value)}></textarea>
             <div className="modal-actions">
               <button id="cancelBulkAddButton" className="secondary-btn" onClick={() => setShowBulkAddModal(false)}>キャンセル</button>
               <button id="clearBulkPrizesButton" className="secondary-btn action-left" onClick={() => setBulkPrizeText('')}>クリア</button>
@@ -681,16 +680,16 @@ export const EventEditView: React.FC = () => {
       )}
 
       {showFillSlotsModal && (
-        <div id="fillSlotsModal" className="modal" style={{display: 'block'}}>
+        <div id="fillSlotsModal" className="modal active">
           <div className="modal-content">
             <span className="close-button" onClick={() => setShowFillSlotsModal(false)}><X /></span>
             <h3>参加枠を埋める</h3>
             <p>現在 <strong id="emptySlotCount">{eventData?.participants?.filter((p: any) => p.name === null).length || 0}</strong> 件の空き枠があります。</p>
             
             {fillSlotsStep === 1 ? (
-              <div id="fillSlotsStep1" style={{display: 'block'}}>
+              <div id="fillSlotsStep1" className="block">
                 <h4>ステップ1：未参加のアクティブメンバー</h4>
-                <ul id="unjoinedMemberList" className="item-list" style={{maxHeight: '200px', overflowY: 'auto'}}>
+                <ul id="unjoinedMemberList" className="item-list max-h-200 overflow-y-auto">
                   {unjoinedMembers.length > 0 ? unjoinedMembers.map(m => (
                     <li key={m.id} className="item-list-item">{m.name}</li>
                   )) : <li>対象メンバーはいません。</li>}
@@ -700,10 +699,10 @@ export const EventEditView: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div id="fillSlotsStep2" style={{display: 'block'}}>
+              <div id="fillSlotsStep2" className="block">
                 <h4>ステップ2：割り当て予定のメンバー</h4>
                 <p>以下のメンバーを割り当てます。よろしいですか？</p>
-                <ul id="selectedMemberList" className="item-list" style={{maxHeight: '200px', overflowY: 'auto'}}>
+                <ul id="selectedMemberList" className="item-list max-h-200 overflow-y-auto">
                   {selectedMembers.map(m => (
                     <li key={m.id} className="item-list-item">{m.name}</li>
                   ))}
@@ -718,22 +717,21 @@ export const EventEditView: React.FC = () => {
       )}
 
       {showPrizeMasterSelectModal && (
-        <div id="prizeMasterSelectModal" className="modal" style={{display: 'block', zIndex: 3060}}>
-          <div className="modal-content" style={{maxWidth: '800px', width: '90%'}}>
+        <div id="prizeMasterSelectModal" className="modal active z-3060">
+          <div className="modal-content max-w-800 w-90">
             <span className="close-button" onClick={() => { setShowPrizeMasterSelectModal(false); setSelectedMaster(null); }}><X /></span>
             <h3>景品マスターから選択</h3>
-            <div style={{maxHeight: '60vh', overflowY: 'auto', marginBottom: '20px'}}>
+            <div className="scrollable-list-wrapper max-h-60vh">
               <ul id="prizeMasterSelectList" className="item-list">
                 {prizeMasters.map(m => (
                   <li 
                     key={m.id} 
-                    className={`item-list-item ${selectedMaster?.id === m.id ? 'selected' : ''}`}
+                    className={`item-list-item prize-master-list-item ${selectedMaster?.id === m.id ? 'selected' : ''}`}
                     onClick={() => setSelectedMaster(m)}
-                    style={{display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer', padding: '10px'}}
                   >
-                    {m.imageUrl ? <img src={m.imageUrl} alt={m.name} style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} /> : <div style={{width: '50px', height: '50px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}><Gift size={24}/></div>}
+                    {m.imageUrl ? <img src={m.imageUrl} alt={m.name} className="prize-master-thumbnail" /> : <div className="prize-master-thumbnail-placeholder"><Gift size={24}/></div>}
                     <div>
-                      <div style={{fontWeight: 'bold'}}>{m.name}</div>
+                      <div className="font-bold">{m.name}</div>
                     </div>
                   </li>
                 ))}

@@ -213,9 +213,9 @@ export const ParticipantView: React.FC = () => {
             hasAnimatedResult.current = true;
             setIsAnimationFinished(false);
             if (targetName) {
-              setMyResult(<div style={{textAlign: 'center', fontSize: '1.2em'}}><b>{targetName}さんの結果をアニメーションで確認中...</b></div>);
+              setMyResult(<div className="text-center text-xl"><b>{targetName}さんの結果をアニメーションで確認中...</b></div>);
             } else {
-              setMyResult(<div style={{textAlign: 'center', fontSize: '1.2em'}}><b>結果を読み込んでいます...</b></div>);
+              setMyResult(<div className="text-center text-xl"><b>結果を読み込んでいます...</b></div>);
             }
 
             const onAnimationComplete = () => {
@@ -250,22 +250,22 @@ export const ParticipantView: React.FC = () => {
                   }
                   
                   setMyResult(
-                    <div style={{textAlign: 'center'}}>
-                      <div style={{fontSize: '1.3em', color: msgColor, fontWeight: 'bold', marginBottom: '15px'}}>{prefixMsg}</div>
-                      {prizeImageUrl && <img src={prizeImageUrl} alt={prizeName} className="result-prize-image large" style={{marginBottom: '15px', maxWidth: '200px', borderRadius: '8px'}} />}
-                      <div style={{fontSize: '1.2em'}}><b>{targetName}さんの結果は…「{prizeName}」でした！</b></div>
+                    <div className="text-center">
+                      <div className={`result-message-title ${rank === 'epic' ? 'text-warning' : rank === 'rare' ? 'text-danger' : rank === 'common' ? 'text-primary' : 'text-muted'} mb-15 font-bold text-2xl`}>{prefixMsg}</div>
+                      {prizeImageUrl && <img src={prizeImageUrl} alt={prizeName} className="result-prize-image large mb-15 max-w-200 radius-8" />}
+                      <div className="text-xl"><b>{targetName}さんの結果は…「{prizeName}」でした！</b></div>
                     </div>
                   );
                 } else {
                   setMyResult(
-                    <div style={{textAlign: 'center'}}>
-                      <div style={{fontSize: '1.3em', color: '#6b7280', fontWeight: 'bold', marginBottom: '15px'}}>残念…</div>
-                      <div style={{fontSize: '1.2em'}}><b>{targetName}さんの結果は…「ハズレ」でした。</b></div>
+                    <div className="text-center">
+                      <div className="result-message-title text-muted mb-15 font-bold text-2xl">残念…</div>
+                      <div className="text-xl"><b>{targetName}さんの結果は…「ハズレ」でした。</b></div>
                     </div>
                   );
                 }
               } else {
-                setMyResult(<div style={{textAlign: 'center', fontSize: '1.2em'}}><b>全結果を表示します</b></div>);
+                setMyResult(<div className="text-center text-xl"><b>全結果を表示します</b></div>);
               }
             };
 
@@ -577,7 +577,7 @@ export const ParticipantView: React.FC = () => {
     });
   };
 
-  if (loading) return <div className="loading-mask" style={{display: 'flex'}}>読み込み中...</div>;
+  if (loading) return <div className="loading-mask global-loading-mask">読み込み中...</div>;
   if (error) return <div className="view-container"><h2 className="error-message">{error}</h2></div>;
 
   return (
@@ -586,11 +586,10 @@ export const ParticipantView: React.FC = () => {
       {!isShare && (
         <div className="event-header">
           <button 
-            className="button" 
-            style={{background: 'none', border: 'none', color: 'var(--primary-color)', display: 'inline-flex', padding: 0}}
+            className="button back-btn" 
             onClick={() => navigate(customUrl ? `/g/${customUrl}/dashboard` : `/groups/${eventData?.groupId}/dashboard`)}
           >
-            <ArrowLeft size={16} style={{marginRight: '5px'}}/> ダッシュボードに戻る
+            <ArrowLeft size={16} className="mr-5"/> ダッシュボードに戻る
           </button>
         </div>
       )}
@@ -628,7 +627,7 @@ export const ParticipantView: React.FC = () => {
               />
               <button type="submit" disabled={!nameInput.trim()}>OK</button>
             </form>
-            {loginError && <p className="error-message" style={{color: 'var(--danger-color)'}}>{loginError}</p>}
+            {loginError && <p className="error-message text-danger">{loginError}</p>}
           </div>
         )}
 
@@ -669,21 +668,21 @@ export const ParticipantView: React.FC = () => {
         )}
 
         {phase === 'staticAmida' && (
-          <div id="staticAmidaView" style={{textAlign: 'center'}}>
+          <div id="staticAmidaView" className="text-center">
             <h3>参加登録済み</h3>
             <p>イベント開始までお待ちください。自分の参加枠とあみだくじの線を確認できます。</p>
             <div className="canvas-panzoom-container">
-              <div className="loading-mask" id="participant-loading-mask-static" style={{display: 'none'}}>あみだくじを生成中...</div>
-              <div className="panzoom-wrapper" id="participant-panzoom-wrapper-static" style={{ position: 'relative' }}>
+              <div className="loading-mask hidden-element" id="participant-loading-mask-static">あみだくじを生成中...</div>
+              <div className="panzoom-wrapper relative" id="participant-panzoom-wrapper-static">
                 <canvas 
                   id="participantCanvasStatic" 
                   ref={staticCanvasRef}
-                  style={{ display: 'block' }}
+                  className="block"
                 ></canvas>
                 <canvas 
                   id="participantCanvasPreview" 
                   ref={previewCanvasRef}
-                  style={{ position: 'absolute', top: 0, left: 0, pointerEvents: doodleTool === 'pan' ? 'none' : 'auto' }}
+                  className={`absolute-top-left ${doodleTool === 'pan' ? 'pointer-events-none' : ''}`}
                   onMouseMove={handlePointerMove}
                   onTouchMove={handlePointerMove}
                   onMouseDown={handlePointerDown}
@@ -705,7 +704,7 @@ export const ParticipantView: React.FC = () => {
               </div>
             )}
 
-            <div className="controls" style={{marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px'}}>
+            <div className="controls mt-20 center gap-10">
               <button className="delete-btn" onClick={async () => {
                 confirmAction('参加枠を変更しますか？', async () => {
                   try {
@@ -733,10 +732,10 @@ export const ParticipantView: React.FC = () => {
                 <canvas id="participantCanvas" ref={resultCanvasRef}></canvas>
               </div>
             </div>
-            {myResult && <div id="myResult" style={{marginTop: '20px', width: '100%', display: 'flex', justifyContent: 'center'}}>{myResult}</div>}
+            {myResult && <div id="myResult" className="w-100 mt-20 center">{myResult}</div>}
             
             {!isShare && isAnimationFinished && (
-              <div className="controls" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+              <div className="controls mt-20 flex-column center gap-10">
                 {(() => {
                    const participation = eventData?.participants?.find((p: any) => p.memberId === myMemberId);
                    const isAcknowledged = participation?.acknowledgedResult;
@@ -754,7 +753,7 @@ export const ParticipantView: React.FC = () => {
                           showToast(e.error || '処理に失敗しました。');
                         }
                      }}>
-                        <Gift size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                        <Gift size={20} className="icon-inline mr-8" />
                         結果を受け取る
                      </button>
                    ) : null;
@@ -792,8 +791,8 @@ export const ParticipantView: React.FC = () => {
             )}
 
             {!isShare && isAnimationFinished && eventData?.results && (
-              <div id="allResultsContainer" style={{ marginTop: '30px' }}>
-                <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <div id="allResultsContainer" className="mt-30">
+                <div className="list-header flex-center-between mb-15">
                   <h3>みんなの結果</h3>
                   <button className="secondary-btn" onClick={() => {
                     // 全員の軌跡を表示するフラグを立てる（useEffect内で再描画される）

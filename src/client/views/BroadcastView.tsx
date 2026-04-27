@@ -110,7 +110,7 @@ export const BroadcastView: React.FC = () => {
 
   const url = groupData && groupData.customUrl ? `${window.location.origin}/g/${groupData.customUrl}/${eventId}` : `${window.location.origin}/events/${eventId}`;
 
-  if (loading) return <div className="loading-mask" style={{display: 'flex'}}>読み込み中...</div>;
+  if (loading) return <div className="loading-mask global-loading-mask">読み込み中...</div>;
 
   const isPending = eventData?.status === 'pending';
   const allParticipants = eventData?.participants.filter((p: any) => p.name) || [];
@@ -121,15 +121,15 @@ export const BroadcastView: React.FC = () => {
     <div id="broadcastView" className={`view-container ${isFullscreen ? 'fullscreen-active' : ''}`}>
       <div className="broadcast-header">
         <button id="backToDashboardButton" onClick={() => navigate(`/admin/event/${eventId}/edit`)}>
-          <ArrowLeft size={16} style={{marginRight: '5px'}} /> <span>編集画面に戻る</span>
+          <ArrowLeft size={16} className="mr-5" /> <span>編集画面に戻る</span>
         </button>
         <div className="broadcast-header-controls">
           <button id="toggleFullscreenButton" onClick={() => setIsFullscreen(!isFullscreen)}>
-            <Maximize size={16} style={{marginRight: '5px'}} /> <span>{isFullscreen ? '元のサイズに戻す' : '表示エリアを最大化'}</span>
+            <Maximize size={16} className="mr-5" /> <span>{isFullscreen ? '元のサイズに戻す' : '表示エリアを最大化'}</span>
           </button>
           {!isPending && (
             <button id="openSidebarButton" onClick={() => setSidebarOpen(true)}>
-              <SlidersHorizontal size={16} style={{marginRight: '5px'}} /> <span>設定</span>
+              <SlidersHorizontal size={16} className="mr-5" /> <span>設定</span>
             </button>
           )}
         </div>
@@ -140,9 +140,9 @@ export const BroadcastView: React.FC = () => {
         
         <div className={`canvas-panzoom-container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
           {isPending && (
-            <div id="adminControls" className="floating-controls" style={{justifyContent: 'center', width: '100%', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex'}}>
-              <button id="startEventButton" className="primary-action" style={{fontSize: '1.5em', padding: '15px 30px'}} onClick={handleStartEvent}>
-                <PartyPopper size={24} style={{marginRight: '10px'}} /> イベント開始！
+            <div id="adminControls" className="floating-controls center-absolute">
+              <button id="startEventButton" className="primary-action btn-large" onClick={handleStartEvent}>
+                <PartyPopper size={24} className="mr-10" /> イベント開始！
               </button>
               <button 
                 id="glimpseButton" 
@@ -163,7 +163,7 @@ export const BroadcastView: React.FC = () => {
         </div>
 
         {!isFullscreen && revealedPrizes.length > 0 && (
-          <div id="broadcastResultsContainer" className="controls" style={{ width: '100%', marginTop: '20px' }}>
+          <div id="broadcastResultsContainer" className="controls w-100 mt-20">
             <ul id="broadcastResultsList" className="item-list">
               {revealedPrizes.map((r, idx) => {
                 const prizeName = typeof r.prize === 'object' ? r.prize.name : r.prize;
@@ -187,7 +187,7 @@ export const BroadcastView: React.FC = () => {
           <h4>コントロールパネル</h4>
           <div className="broadcast-controls">
             {noParticipants && !isPending && (
-              <p style={{fontSize: '12px', color: 'var(--danger-color)', margin: '0 0 10px 0'}}>
+              <p className="text-danger text-sm mb-10">
                 ※ 参加者がいないため、アニメーションは実行できません（景品のみ公開されています）
               </p>
             )}
@@ -258,11 +258,11 @@ export const BroadcastView: React.FC = () => {
 
       {/* 確認モーダル */}
       {showConfirmModal.isOpen && (
-        <div className="modal" style={{display: 'block', zIndex: 10000}}>
-          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+        <div className="modal active">
+          <div className="modal-content max-w-400 text-center">
             <h3>確認</h3>
             <p className="confirm-message">{showConfirmModal.message}</p>
-            <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+            <div className="modal-actions center gap-15">
               <button className="secondary-btn" onClick={() => setShowConfirmModal(prev => ({ ...prev, isOpen: false }))}>キャンセル</button>
               <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
             </div>
