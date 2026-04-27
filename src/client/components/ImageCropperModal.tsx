@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import Cropper from 'cropperjs';
+import 'cropperjs/dist/cropper.css';
 
 interface ImageCropperModalProps {
   imageUrl: string;
@@ -12,18 +14,12 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({ imageUrl, 
 
   useEffect(() => {
     if (imageRef.current) {
-      // @ts-ignore
-      if (window.Cropper) {
-        // @ts-ignore
-        cropperRef.current = new window.Cropper(imageRef.current, {
-          aspectRatio: 1,
-          viewMode: 1,
-          background: false,
-          autoCropArea: 1,
-        });
-      } else {
-        console.error('Cropper.js is not loaded from CDN.');
-      }
+      cropperRef.current = new Cropper(imageRef.current, {
+        aspectRatio: 1,
+        viewMode: 1,
+        background: false,
+        autoCropArea: 1,
+      } as any);
     }
 
     return () => {

@@ -13,6 +13,8 @@ import { participantPanzoom, resetParticipantPanzoom } from '../lib/animation/se
 import { getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight, getTargetHeight } from '../lib/animation/path';
 // @ts-ignore
 import { drawLotteryBase, drawDoodleHoverPreview, drawDoodlePreview } from '../lib/animation/drawing';
+import { initFirebase } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export const ParticipantView: React.FC = () => {
   const { eventId, customUrl, participantName } = useParams();
@@ -124,11 +126,11 @@ export const ParticipantView: React.FC = () => {
         }
 
         if (!isShare) {
-          const firestoreDb = (window as any).firebase.firestore();
-          const unsubscribe = firestoreDb.collection('events').doc(actualEventId).onSnapshot(
-            async (doc: any) => {
-              if (!doc.exists) return;
-              const updatedData = doc.data();
+          const { db } = await initFirebase();
+          const unsubscribe = onSnapshot(doc(db, 'events', actualEventId!),
+            async (docSnap: any) => {
+              if (!docSnap.exists()) return;
+              const updatedData = docSnap.data();
               
               setEventData((prev: any) => {
                 if (prev?.status === 'pending' && updatedData.status === 'started') {

@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { setUser, setLoading } from '../store/authSlice';
+import { setUser } from '../store/authSlice';
+import { initFirebase } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch();
@@ -8,10 +10,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let unsubscribe: any;
     
-    const checkFirebaseAndSubscribe = () => {
-      const fb = (window as any).firebase;
-      if (fb && fb.apps && fb.apps.length > 0) {
-        unsubscribe = fb.auth().onAuthStateChanged(async (firebaseUser: any) => {
+    const setupFirebase = async () => {
+      try {
+        const { auth } = await initFirebase();
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           if (firebaseUser) {
             try {
               const meRes = await fetch('/api/user/me', { credentials: 'include' });
@@ -29,13 +31,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             dispatch(setUser(null));
           }
         });
-      } else {
-        // Firebase is not initialized yet, wait and try again
-        setTimeout(checkFirebaseAndSubscribe, 100);
+      } catch (e) {
+        console.error('Firebase setup failed', e);
       }
     };
 
-    checkFirebaseAndSubscribe();
+    setupFirebase();
 
     return () => {
       if (unsubscribe) unsubscribe();
