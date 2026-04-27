@@ -33,6 +33,8 @@ export const EventEditView: React.FC = () => {
   const [showFillSlotsModal, setShowFillSlotsModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [showPrizeMasterSelectModal, setShowPrizeMasterSelectModal] = useState(false);
+  const [showSelectParticipantModal, setShowSelectParticipantModal] = useState(false);
+  const [targetSlotForAdd, setTargetSlotForAdd] = useState<number | null>(null);
   
   const [newPrizeName, setNewPrizeName] = useState('');
   const [newPrizeRank, setNewPrizeRank] = useState('uncommon');
@@ -270,6 +272,18 @@ export const EventEditView: React.FC = () => {
       setUnjoinedMembers(members);
       setFillSlotsStep(1);
       setShowFillSlotsModal(true);
+    } catch (e) {
+      showToast('未参加メンバーの取得に失敗しました');
+    }
+  };
+
+  const openAddParticipantModal = async (slot: number) => {
+    try {
+      const targetGroupId = groupId || eventData?.groupId;
+      const members = await api.getUnjoinedMembers(targetGroupId, currentEventId!);
+      setUnjoinedMembers(members);
+      setTargetSlotForAdd(slot);
+      setShowSelectParticipantModal(true);
     } catch (e) {
       showToast('未参加メンバーの取得に失敗しました');
     }
@@ -553,18 +567,77 @@ export const EventEditView: React.FC = () => {
             <button id="createEventButton" className="primary-action" onClick={handleSave} disabled={saving}>この内容でイベントを作成</button>
           </div>
         ) : (
-          <div className="settings-section">
-            <h4>5. 最終準備と配信</h4>
-            <div className="final-prep-content-wrapper relative">
-              {isDirty && (
-                <div className="final-prep-overlay">
-                  <button id="saveForPreviewButton" className="primary-action" onClick={handleSave} disabled={saving}>変更を保存してプレビューを更新</button>
+          <div className="relative">
+            {isDirty && (
+              <div className="final-prep-overlay">
+                <button id="saveForPreviewButton" className="primary-action" onClick={handleSave} disabled={saving}>変更を保存して設定を確定する</button>
+              </div>
+            )}
+            
+            <div className={`transition-opacity ${isDirty ? 'opacity-30 pointer-events-none' : ''}`}>
+              <div className="settings-section">
+                <h4>5. 参加者管理</h4>
+                <p className="description text-muted mb-10 text-09em">現在割り当てられている参加者を確認・削除できます。</p>
+                <div className="input-group mb-10">
+                  <button id="showFillSlotsModalButton" onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
                 </div>
-              )}
-              <p>あみだくじを生成・プレビューし、必要に応じて調整します。</p>
-              <div className="input-group flex-wrap-gap-10">
-                <button id="showFillSlotsModalButton" onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
-                <button id="regenerateLinesButton" onClick={handleRegenerateLines} disabled={isStarted}><RefreshCw size={16}/> 線を再生成</button>
+                
+                <div className="max-h-300 overflow-y-auto border-ccc" style={{ borderRadius: '8px' }}>
+                  <table className="prize-list-table m-0" style={{ border: 'none' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#f8fafc' }}>
+                      <tr>
+                        <th className="w-80 text-center">枠番号</th>
+                        <th className="text-left">名前</th>
+                        <th className="text-center w-80">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {eventData?.participants?.map((p: any, i: number) => (
+                        <tr key={i}>
+                          <td className="text-center">{i + 1}</td>
+                          <td>{p.name || <span className="text-muted">（空き枠）</span>}</td>
+                          <td className="text-center">
+                            {p.name && !isStarted ? (
+                              <button 
+                                onClick={async () => {
+                                  const opt = await showCustomConfirm(`${p.name} さんをこのイベントから削除しますか？`, ['削除する']);
+                                  if (!opt) return;
+                                  try {
+                                    const res = await api.adminRemoveParticipant(currentEventId!, i);
+                                    setEventData({...eventData, participants: res.participants});
+                                    showToast(`${p.name} さんを削除しました`);
+                                  } catch (e: any) {
+                                    showToast(e.error || '削除に失敗しました');
+                                  }
+                                }}
+                                className="delete-btn delete-prize-list"
+                              >
+                                削除
+                              </button>
+                            ) : (!p.name && !isStarted && (
+                              <button 
+                                onClick={() => openAddParticipantModal(i)}
+                                className="primary-action"
+                                style={{ padding: '4px 8px', fontSize: '12px' }}
+                              >
+                                <Plus size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }}/>
+                                追加
+                              </button>
+                            ))}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="settings-section">
+                <h4>6. 最終準備と配信</h4>
+                <div className="final-prep-content-wrapper">
+                  <p>あみだくじを生成・プレビューし、必要に応じて調整します。</p>
+                <div className="input-group flex-wrap-gap-10">
+                  <button id="regenerateLinesButton" onClick={handleRegenerateLines} disabled={isStarted}><RefreshCw size={16}/> 線を再生成</button>
                 <button id="shufflePrizesBroadcastButton" onClick={async () => {
                   const opt = await showCustomConfirm('景品をシャッフルしますか？', ['シャッフルする']);
                   if (!opt) return;
@@ -585,10 +658,12 @@ export const EventEditView: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-20 text-center">
-              <Link id="goToBroadcastViewButton" to={`/admin/event/${currentEventId}/broadcast`} className="primary-action link-btn-inline">
-                配信画面へ進む <ArrowRight size={16}/>
-              </Link>
+              <div className="mt-20 text-center">
+                <Link id="goToBroadcastViewButton" to={`/admin/event/${currentEventId}/broadcast`} className="primary-action link-btn-inline">
+                  配信画面へ進む <ArrowRight size={16}/>
+                </Link>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -759,6 +834,43 @@ export const EventEditView: React.FC = () => {
                 }
               }}>選択して反映</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showSelectParticipantModal && (
+        <div className="modal active">
+          <div className="modal-content text-center">
+            <span className="close-button" onClick={() => setShowSelectParticipantModal(false)}><X /></span>
+            <h3 className="mb-15 text-left">枠 {targetSlotForAdd! + 1} にメンバーを追加</h3>
+            <p className="mb-15 text-left text-muted">この枠に割り当てる未参加メンバーを選択してください。</p>
+            
+            <ul className="item-list max-h-300 overflow-y-auto mb-20 text-left">
+              {unjoinedMembers.length > 0 ? (
+                unjoinedMembers.map(m => (
+                  <li 
+                    key={m.id} 
+                    className="item-list-item" 
+                    style={{ padding: '12px 15px', cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
+                    onClick={async () => {
+                      try {
+                        const res = await api.adminAddParticipant(currentEventId!, targetSlotForAdd!, m.id);
+                        setEventData({...eventData, participants: res.participants});
+                        showToast(`${m.name} さんを追加しました`);
+                        setShowSelectParticipantModal(false);
+                      } catch (e: any) {
+                        showToast(e.error || '追加に失敗しました');
+                      }
+                    }}
+                  >
+                    {m.iconUrl && <img src={m.iconUrl} alt={m.name} style={{ width: '24px', height: '24px', borderRadius: '50%', marginRight: '10px' }} />}
+                    <span>{m.name}</span>
+                  </li>
+                ))
+              ) : (
+                <li className="item-list-item text-muted">未参加のアクティブメンバーがいません</li>
+              )}
+            </ul>
           </div>
         </div>
       )}

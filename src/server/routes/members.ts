@@ -435,11 +435,28 @@ members.get('/groups/:groupId/member-suggestions', async (c) => {
 members.get('/groups/:groupId/unjoined-members', requireAuth, async (c) => {
   try {
     const groupId = c.req.param('groupId');
+    const eventId = c.req.query('eventId');
     const user = c.get('user');
     const db = new FirestoreClient(c.env.FIREBASE_SERVICE_ACCOUNT);
     const groupDoc = await db.getDocument(`groups/${groupId}`);
     if (!groupDoc || db.firestoreToJson(groupDoc).ownerId !== user.targetUserId) {
       return c.json({ error: 'Unauthorized' }, 403);
+    }
+
+    // Get event to filter out already joined members
+    let joinedMemberIds = new Set<string>();
+    if (eventId) {
+      const eventDoc = await db.getDocument(`events/${eventId}`);
+      if (eventDoc) {
+        const eventData = db.firestoreToJson(eventDoc);
+        if (eventData.participants && Array.isArray(eventData.participants)) {
+          eventData.participants.forEach((p: any) => {
+            if (p.memberId) {
+              joinedMemberIds.add(p.memberId);
+            }
+          });
+        }
+      }
     }
 
     const membersRes = await db.runQuery(`groups/${groupId}`, { from: [{ collectionId: 'members' }] });
@@ -449,7 +466,7 @@ members.get('/groups/:groupId/unjoined-members', requireAuth, async (c) => {
       return { id: nameParts[nameParts.length - 1], ...data };
     });
 
-    const activeMembers = allMembers.filter((m: any) => m.isActive);
+    const activeMembers = allMembers.filter((m: any) => m.isActive && !joinedMemberIds.has(m.id));
     return c.json(activeMembers, 200);
   } catch (error) {
     return c.json({ error: 'Error fetching unjoined' }, 500);

@@ -134,3 +134,5 @@ export const getUnjoinedMembers = (groupId: string, eventId: string): Promise<an
 export const fillSlots = (eventId: string, assignments: any[]): Promise<any> => request(`/api/events/${eventId}/fill-slots`, 'POST', {assignments});
 
 export const cleanupEvents = (groupId: string): Promise<any> => request(`/api/groups/${groupId}/cleanup-events`, 'POST'); // ★ 追加
+export const adminRemoveParticipant = (eventId: string, slot: number): Promise<any> => request(`/api/events/${eventId}/participants/${slot}/admin-remove`, 'DELETE');
+export const adminAddParticipant = (eventId: string, slot: number, memberId: string): Promise<any> => request(`/api/events/${eventId}/participants/${slot}/admin-add`, 'POST', { memberId });

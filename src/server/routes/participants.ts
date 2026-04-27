@@ -463,4 +463,108 @@ participants.post('/events/:eventId/fill-slots', requireAuth, async (c) => {
   }
 });
 
+participants.delete('/events/:eventId/participants/:slot/admin-remove', requireAuth, async (c) => {
+  try {
+    const eventId = c.req.param('eventId');
+    const slotStr = c.req.param('slot');
+    const slot = parseInt(slotStr, 10);
+    const user = c.get('user');
+
+    if (isNaN(slot)) return c.json({ error: '無効なスロット番号です。' }, 400);
+
+    const db = new FirestoreClient(c.env.FIREBASE_SERVICE_ACCOUNT);
+    const eventDoc = await db.getDocument(`events/${eventId}`);
+    if (!eventDoc || !eventDoc.name) return c.json({ error: 'イベントが見つかりません。' }, 404);
+
+    const eventData = db.firestoreToJson(eventDoc);
+    
+    // Check admin permissions
+    if (eventData.ownerId !== user.targetUserId) {
+      return c.json({ error: '権限がありません。' }, 403);
+    }
+
+    if (eventData.status === 'started') return c.json({ error: 'イベント開始後は参加情報を削除できません。' }, 403);
+
+    const newParticipants = [...(eventData.participants || [])];
+    
+    if (slot < 0 || slot >= newParticipants.length) {
+      return c.json({ error: '無効なスロットです。' }, 400);
+    }
+
+    const memberIdToDelete = newParticipants[slot].memberId;
+
+    if (!newParticipants[slot].name) {
+       return c.json({ message: 'すでに空き枠です。' }, 200);
+    }
+
+    newParticipants[slot].name = null;
+    newParticipants[slot].memberId = null;
+    newParticipants[slot].iconUrl = null;
+    newParticipants[slot].color = null;
+
+    let updatePayload: any = { participants: newParticipants, lastModifiedAt: new Date().toISOString() };
+    if (memberIdToDelete && eventData.doodles && eventData.doodles.length > 0) {
+      updatePayload.doodles = eventData.doodles.filter((doodle: any) => doodle.memberId !== memberIdToDelete);
+    }
+
+    await db.patchDocument(`events/${eventId}`, updatePayload);
+    return c.json({ message: '参加情報を削除しました。', participants: newParticipants }, 200);
+  } catch (error) {
+    console.error('Error admin removing participant:', error);
+    return c.json({ error: '参加情報の削除中にエラーが発生しました。' }, 500);
+  }
+});
+
+participants.post('/events/:eventId/participants/:slot/admin-add', requireAuth, async (c) => {
+  try {
+    const eventId = c.req.param('eventId');
+    const slotStr = c.req.param('slot');
+    const slot = parseInt(slotStr, 10);
+    const { memberId } = await c.req.json();
+    const user = c.get('user');
+
+    if (isNaN(slot)) return c.json({ error: '無効なスロット番号です。' }, 400);
+    if (!memberId) return c.json({ error: '追加するメンバーが指定されていません。' }, 400);
+
+    const db = new FirestoreClient(c.env.FIREBASE_SERVICE_ACCOUNT);
+    const eventDoc = await db.getDocument(`events/${eventId}`);
+    if (!eventDoc || !eventDoc.name) return c.json({ error: 'イベントが見つかりません。' }, 404);
+
+    const eventData = db.firestoreToJson(eventDoc);
+    
+    // Check admin permissions
+    if (eventData.ownerId !== user.targetUserId) {
+      return c.json({ error: '権限がありません。' }, 403);
+    }
+
+    if (eventData.status === 'started') return c.json({ error: 'イベント開始後は参加情報を追加できません。' }, 403);
+
+    const newParticipants = [...(eventData.participants || [])];
+    
+    if (slot < 0 || slot >= newParticipants.length) {
+      return c.json({ error: '無効なスロットです。' }, 400);
+    }
+
+    if (newParticipants[slot].name) {
+      return c.json({ error: 'この枠はすでに埋まっています。' }, 409);
+    }
+
+    const memberDoc = await db.getDocument(`groups/${eventData.groupId}/members/${memberId}`);
+    if (!memberDoc) return c.json({ error: 'メンバーが見つかりません。' }, 404);
+    
+    const memberData = db.firestoreToJson(memberDoc);
+
+    newParticipants[slot].name = memberData.name;
+    newParticipants[slot].memberId = memberId;
+    newParticipants[slot].iconUrl = memberData.iconUrl;
+    newParticipants[slot].color = memberData.color;
+
+    await db.patchDocument(`events/${eventId}`, { participants: newParticipants, lastModifiedAt: new Date().toISOString() });
+    return c.json({ message: '参加者を追加しました。', participants: newParticipants }, 200);
+  } catch (error) {
+    console.error('Error admin adding participant:', error);
+    return c.json({ error: '参加者の追加中にエラーが発生しました。' }, 500);
+  }
+});
+
 export default participants;
