@@ -2,17 +2,18 @@
 
 リアルタイムでアニメーションが同期する、複数人参加型の動的あみだくじアプリケーションです。参加者がそれぞれ自分の画面からくじの「線（ハシゴ）」を引くことができ、誰かが線を引くたびに全員の画面にリアルタイムで反映されます。
 
-## システム構成
+## システム構成・技術スタック
 
-本アプリケーションは、大規模なリニューアルを経て、コストパフォーマンスとパフォーマンスに優れたモダンなサーバーレスアーキテクチャ（エッジコンピューティング）に移行しました。
+本アプリケーションは大規模なリニューアルを経て、レガシーなVanilla JS/EJS構成から、ReactベースのモダンなSPAおよびエッジコンピューティング環境へ完全移行しました。
 
-- **バックエンドAPI**: Cloudflare Workers + Hono (旧 Google App Engine / Express.js から完全移行)
-- **フロントエンド（UI）**: Cloudflare Workers Assets Binding (SSR/EJSを廃止し、SPA/Static HTMLへ移行)
+- **フロントエンド（UI / 状態管理）**: React 19, TypeScript, Vite, Redux Toolkit, React Router
+- **スタイリング**: Vanilla SCSS (`lucide-react` アイコン併用)
+- **バックエンドAPI**: Cloudflare Workers + Hono (Hono Vite Dev Server 対応)
 - **リアルタイム同期**: Firebase Firestore (フロントエンドから `onSnapshot` による直接リッスン)
 - **認証機構**: 
   - **Google OAuth連携**: Honoによる独自実装で、バックエンド側でJWTセッション管理。
   - **Firebase Anonymous Login**: フロントエンドからFirestoreへの安全な Read-Only リアルタイム接続用。
-  - **合言葉（グループパスワード）**: サーバーサイドCookie (`verifiedGroups`) による堅牢なアクセス制御ゲートウェイ。
+  - **合言葉（グループパスワード）**: サーバーサイドCookie (`verifiedGroups`) による堅牢なアクセス制御。
 
 ---
 
@@ -41,33 +42,34 @@ FIREBASE_SERVICE_ACCOUNT='{"type":"service_account","project_id":"...","private_
 ```
 
 ### 3. ローカルサーバーの起動
-以下のコマンドで Wrangler のローカル開発サーバーが立ち上がります。
+Vite 開発サーバー（Hono 統合環境）を起動します。
 
 ```bash
 npm run dev
-# または npm start
 ```
-起動後、ブラウザから `http://localhost:8787` にアクセスして動作確認を行います。
+起動後、ブラウザから `http://localhost:5173` (Viteのデフォルトポート) 等にアクセスして動作確認を行います。
+また、開発中にSCSSを自動コンパイルする場合は、別ターミナルで以下を実行します。
+
+```bash
+npm run scss
+```
 
 ---
 
 ## ビルド・デプロイ方法
 
-### スタイルシート (SCSS) のコンパイル
-デザイン修正等で `scss` フォルダ内のファイルを変更した場合は、以下のコマンドで CSS にコンパイルします。
+### 1. スタイルシート (SCSS) のビルド
+本番ビルド前に、SCSS の変更を `public/style.css` に反映させる必要があります。
 
 ```bash
-# 手動コンパイル（1回のみ）
 npm run build:css
-
-# 自動監視コンパイル（開発中ずっと）
-npm run scss
 ```
 
-### 本番環境（Cloudflare）へのデプロイ
-Wranglerを使用して、Cloudflare Workers のグローバルネットワーク上にデプロイします。
+### 2. 本番環境（Cloudflare）へのデプロイ
+TypeScriptの型チェック、Viteによるフロントエンド・バックエンド統合ビルドを行った後、Wranglerを使用して Cloudflare Workers へデプロイします。
 
 ```bash
+npm run build
 npm run deploy
 ```
 
@@ -82,17 +84,17 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put SESSION_SECRET
 npx wrangler secret put FIREBASE_SERVICE_ACCOUNT
 ```
-*(※ `FIREBASE_SERVICE_ACCOUNT` は複数行のJSONを含みますが、ターミナルでコピペするとエラーになるため、改行を削除した1行のJSON文字列を使用するか、PowerShell等の機能でファイルから直接流し込んでください。)*
+*(※ `FIREBASE_SERVICE_ACCOUNT` は複数行のJSONを含みます。改行を削除した1行のJSON文字列を使用するか、ファイルからリダイレクトして登録してください。)*
 
 ---
 
 ## 技術的な留意点・設計の工夫
 
-1. **Firestoreの権限分離 (Security Rules)**
+1. **React / Redux / Vite によるSPA化**
+   従来の画面遷移型レガシーシステムからReactによるSPAへ移行したことで、UIの応答性が飛躍的に向上しました。複雑なモーダル管理や認証状態は Redux Toolkit でグローバルに管理されています。
+
+2. **Firestoreの権限分離 (Security Rules)**
    データの「作成・更新・削除」はすべて Cloudflare Workers のバックエンドAPI（Firebase Admin SDK経由）で行います。フロントエンドからは「閲覧のみ（`onSnapshot`）」を許可するハイブリッド設計により、堅牢なセキュリティと高速な同期を両立しています。
-   
-2. **SPA化とエッジレンダリング**
-   以前の `EJS` テンプレートエンジンによるサーバーサイドレンダリングから、完全な静的HTML (`public/`) とフロントエンドJavaScriptの構成に移行しました。これにより、CloudflareのエッジネットワークからHTMLが超高速で配信される恩恵を最大限に受けています。
 
 3. **強固な合言葉システム**
-   グループの「合言葉」検証はバックエンドで行い、ブラウザには安全な Cookie (`path=/`, `HttpOnly`, `Secure`, `SameSite=Lax`) のみを発行します。これにより、クライアント側の改ざんやログアウト漏れによる不正な直接URLアクセス（バイパス）を完全に遮断しています。
+   グループの「合言葉」検証はバックエンドで行い、ブラウザには安全な Cookie (`path=/`, `HttpOnly`, `Secure`, `SameSite=Lax`) のみを発行します。これにより、クライアント側の改ざんやログアウト漏れによる不正アクセスを完全に遮断しています。
