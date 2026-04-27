@@ -289,6 +289,26 @@ body.dark-mode #adminControls #glimpseButton {
   background-color: rgba(var(--white-color-rgb, 30, 30, 30), 0.7);
 }
 
+.impersonation-bar {
+  background-color: #ffeb3b;
+  color: #333;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  z-index: 10002;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+.impersonation-bar button {
+  padding: 5px 15px;
+  font-size: 14px;
+  margin: 0;
+}
+
 #header-container {
   position: fixed;
   top: 0;
@@ -3052,6 +3072,29 @@ body.light-mode .toast-notification {
   background-color: rgba(255, 255, 255, 0.95);
   color: var(--text-color);
   border: 1px solid var(--border-color);
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background-color: #333;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 14px;
+  z-index: 10001;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.toast.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 /*# sourceMappingURL=style.css.map */

@@ -121,13 +121,15 @@ export const TutorialEngine: React.FC = () => {
     });
   };
 
-  const markTutorialAsCompleted = (storyId: string) => {
+  const markTutorialAsCompleted = (storyId: string, skipNavigate = false) => {
     try {
       localStorage.setItem(`tutorialCompleted_${storyId}`, 'true');
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('forceTutorial')) {
-        params.delete('forceTutorial');
-        navigate(`${window.location.pathname}?${params.toString()}`, { replace: true });
+      if (!skipNavigate) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('forceTutorial')) {
+          params.delete('forceTutorial');
+          navigate(`${window.location.pathname}?${params.toString()}`, { replace: true });
+        }
       }
     } catch (e) {}
   };
@@ -281,7 +283,12 @@ export const TutorialEngine: React.FC = () => {
             const c2 = await showCustomConfirm('この操作は元に戻せません。本当によろしいですか？', ['はい']);
             if (c2 !== 'はい') { setIsVisible(true); return; }
             
-            tutorials.forEach(t => markTutorialAsCompleted(t.id));
+            tutorials.forEach(t => markTutorialAsCompleted(t.id, true));
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('forceTutorial')) {
+              params.delete('forceTutorial');
+              navigate(`${window.location.pathname}?${params.toString()}`, { replace: true });
+            }
             showToast('すべてのチュートリアルを完了済みにしました。');
             window.dispatchEvent(new CustomEvent('tutorialsUpdated'));
             resolve(closeDialog({ok: false}));
@@ -440,25 +447,29 @@ export const TutorialEngine: React.FC = () => {
     };
   }, []);
 
-  if (!isVisible) return null;
+  if (!isVisible && !confirmModalConfig) return null;
 
   return (
     <>
-      <div className="tutorial-highlight-box" style={{ ...highlightStyle, position: 'fixed', zIndex: 9999, pointerEvents: 'none', transition: 'all 0.3s ease-in-out', borderRadius: '5px' }}></div>
-      <div className="tutorial-focus-border" style={{ ...focusStyle, position: 'fixed', zIndex: 10001, pointerEvents: 'none', transition: 'all 0.3s ease-in-out', border: '3px solid blue', borderRadius: '5px', boxSizing: 'border-box' }}></div>
-      <div id="tutorial-dialog-react" className="tutorial-dialog" style={{ ...dialogStyle, position: 'fixed', zIndex: 10002, backgroundColor: 'white', border: '1px solid #ccc', borderRadius: '8px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.2)', maxWidth: '350px', transition: 'all 0.3s ease', color: '#333' }}>
-        <div className="step-title" style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: escapeHtml(title) }}></div>
-        <div className="step-message" style={{ marginBottom: '20px', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: escapeHtml(message) }}></div>
-        <div className="step-actions" style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-          <a onClick={() => skipAllActionRef.current?.()} className="skip-all-link" style={{ fontSize: '0.8em', color: '#dc3545', cursor: 'pointer', textDecoration: 'underline' }}>チュートリアルを全部終了したことにする</a>
-          <div>
-            <button onClick={() => cancelActionRef.current?.()} style={{ padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #ccc', marginRight: '10px' }}>キャンセル</button>
-            {showNextButton && (
-              <button onClick={() => nextActionRef.current?.()} className="primary" style={{ padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #007bff', backgroundColor: '#007bff', color: 'white' }}>{nextButtonText}</button>
-            )}
+      {isVisible && (
+        <>
+          <div className="tutorial-highlight-box" style={{ ...highlightStyle, position: 'fixed', zIndex: 9999, pointerEvents: 'none', transition: 'all 0.3s ease-in-out', borderRadius: '5px' }}></div>
+          <div className="tutorial-focus-border" style={{ ...focusStyle, position: 'fixed', zIndex: 10001, pointerEvents: 'none', transition: 'all 0.3s ease-in-out', border: '3px solid blue', borderRadius: '5px', boxSizing: 'border-box' }}></div>
+          <div id="tutorial-dialog-react" className="tutorial-dialog" style={{ ...dialogStyle, position: 'fixed', zIndex: 10002, backgroundColor: 'white', border: '1px solid #ccc', borderRadius: '8px', padding: '20px', boxShadow: '0 4px 8px rgba(0,0,0,0.2)', maxWidth: '350px', transition: 'all 0.3s ease', color: '#333' }}>
+            <div className="step-title" style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '1.2em' }} dangerouslySetInnerHTML={{ __html: escapeHtml(title) }}></div>
+            <div className="step-message" style={{ marginBottom: '20px', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: escapeHtml(message) }}></div>
+            <div className="step-actions" style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
+              <a onClick={() => skipAllActionRef.current?.()} className="skip-all-link" style={{ fontSize: '0.8em', color: '#dc3545', cursor: 'pointer', textDecoration: 'underline' }}>チュートリアルを全部終了したことにする</a>
+              <div>
+                <button onClick={() => cancelActionRef.current?.()} style={{ padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #ccc', marginRight: '10px' }}>キャンセル</button>
+                {showNextButton && (
+                  <button onClick={() => nextActionRef.current?.()} className="primary" style={{ padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #007bff', backgroundColor: '#007bff', color: 'white' }}>{nextButtonText}</button>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
       {confirmModalConfig && (
         <CustomConfirmModal
           message={confirmModalConfig.message}

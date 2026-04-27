@@ -73,6 +73,24 @@ export const Header: React.FC = () => {
 
   return (
     <div id="header-container">
+      {user?.isImpersonating && (
+        <div className="impersonation-banner">
+          <span>現在、成り代わり中です（元の管理者ID: {user.originalAdminId}）</span>
+          <button
+            className="secondary-btn"
+            onClick={async () => {
+              try {
+                await api.stopImpersonating();
+                window.location.href = '/admin/dashboard';
+              } catch(e) {
+                console.error(e);
+              }
+            }}
+          >
+            本来のユーザーに戻る
+          </button>
+        </div>
+      )}
       {showAdminHeader && (
         <header className="main-header" style={{ display: 'flex' }}>
           <h1>ダイナミックあみだくじ</h1>

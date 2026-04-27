@@ -16,6 +16,8 @@ import { TutorialListView } from './views/TutorialListView';
 import { BackgroundGrid } from './components/BackgroundGrid';
 import { SettingsPanel } from './components/SettingsPanel';
 import { TutorialEngine } from './tutorial/TutorialEngine';
+import { useSelector } from 'react-redux';
+import * as api from './lib/api';
 
 const App: React.FC = () => {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
@@ -24,6 +26,8 @@ const App: React.FC = () => {
 
   const [toastMessage, setToastMessage] = useState('');
   const [confirmState, setConfirmState] = useState<{isOpen: boolean, message: string, resolve: (v: boolean) => void} | null>(null);
+
+  const user = useSelector((state: any) => state.auth.user);
 
   const showToast = (msg: string, duration = 3000) => {
     setToastMessage(msg);
