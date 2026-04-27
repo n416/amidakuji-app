@@ -43,6 +43,31 @@ export const Header: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    const parts = location.pathname.split('/');
+    if (parts[1] === 'admin' && parts[2] === 'groups' && parts[3] && parts[3] !== 'members') {
+      const gId = parts[3];
+      if (groups.some(g => g.id === gId)) {
+        localStorage.setItem('lastGroupId', gId);
+      }
+    }
+  }, [location.pathname, groups]);
+
+  const handleHomeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    if (!isAuthenticated) {
+      navigate('/');
+      return;
+    }
+    const lastGroupId = localStorage.getItem('lastGroupId');
+    if (lastGroupId && groups.some(g => g.id === lastGroupId)) {
+      navigate(`/admin/groups/${lastGroupId}`);
+    } else {
+      navigate('/admin/groups');
+    }
+  };
+
   const handleAdminLogin = () => {
     window.location.href = '/auth/google';
   };
@@ -106,9 +131,11 @@ export const Header: React.FC = () => {
           </button>
           <div id="nav-menu" className={menuOpen ? 'open' : ''}>
           
-          <Link to="/" className="button header-icon-button" title="ホーム" onClick={() => setMenuOpen(false)}>
-            <Home size={16} /><span>ホーム</span>
-          </Link>
+          {isAuthenticated && (
+            <Link to="/" className="button header-icon-button" title="ホーム" onClick={handleHomeClick}>
+              <Home size={16} /><span>ホーム</span>
+            </Link>
+          )}
 
           {isAuthenticated && groups.length > 0 && (
             <div className="group-switcher-container">
@@ -135,23 +162,25 @@ export const Header: React.FC = () => {
             </div>
           )}
 
-          <div className="header-dropdown">
-            <button 
-              className="button header-icon-button" 
-              onClick={() => setTutorialDropdownOpen(!tutorialDropdownOpen)}
-            >
-              <HelpCircle size={16} />
-              <span>チュートリアル</span>
-              <ChevronDown size={14} className="dropdown-arrow" />
-            </button>
-            {tutorialDropdownOpen && (
-              <div className="dropdown-content open">
-                <Link to="/tutorials" className="dropdown-item-link" onClick={() => {setTutorialDropdownOpen(false); setMenuOpen(false);}}>
-                  すべて表示
-                </Link>
-              </div>
-            )}
-          </div>
+          {isAuthenticated && (
+            <div className="header-dropdown">
+              <button 
+                className="button header-icon-button" 
+                onClick={() => setTutorialDropdownOpen(!tutorialDropdownOpen)}
+              >
+                <HelpCircle size={16} />
+                <span>チュートリアル</span>
+                <ChevronDown size={14} className="dropdown-arrow" />
+              </button>
+              {tutorialDropdownOpen && (
+                <div className="dropdown-content open">
+                  <Link to="/tutorials" className="dropdown-item-link" onClick={() => {setTutorialDropdownOpen(false); setMenuOpen(false);}}>
+                    すべて表示
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           {!isLoading && isAuthenticated ? (
             <div className="header-dropdown">
