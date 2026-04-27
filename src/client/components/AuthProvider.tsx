@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { setUser, setLoading } from '../store/authSlice';
+import { onAuthStateChanged } from 'firebase/auth';
+import { firebaseAuth } from '../lib/firebaseSetup';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch();
@@ -9,9 +11,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubscribe: any;
     
     const checkFirebaseAndSubscribe = () => {
-      const fb = (window as any).firebase;
-      if (fb && fb.apps && fb.apps.length > 0) {
-        unsubscribe = fb.auth().onAuthStateChanged(async (firebaseUser: any) => {
+      if (firebaseAuth) {
+        unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser: any) => {
           if (firebaseUser) {
             try {
               const meRes = await fetch('/api/user/me', { credentials: 'include' });

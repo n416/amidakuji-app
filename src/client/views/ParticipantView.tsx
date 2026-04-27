@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { firestoreDb } from '../lib/firebaseSetup';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setParticipantSession, clearParticipantSession } from '../store/participantSlice';
@@ -124,11 +126,10 @@ export const ParticipantView: React.FC = () => {
         }
 
         if (!isShare) {
-          const firestoreDb = (window as any).firebase.firestore();
-          const unsubscribe = firestoreDb.collection('events').doc(actualEventId).onSnapshot(
-            async (doc: any) => {
-              if (!doc.exists) return;
-              const updatedData = doc.data();
+          const unsubscribe = onSnapshot(doc(firestoreDb, 'events', actualEventId!),
+            async (docSnap: any) => {
+              if (!docSnap.exists()) return;
+              const updatedData = docSnap.data();
               
               setEventData(updatedData);
             },

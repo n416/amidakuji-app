@@ -66,7 +66,7 @@ export function initializePanzoom(canvasElement) {
     if (container._wheelListener) {
       container.removeEventListener('wheel', container._wheelListener);
     }
-    container.addEventListener('wheel', wheelListener);
+    container.addEventListener('wheel', wheelListener, { passive: false });
     container._wheelListener = wheelListener;
   }
 
