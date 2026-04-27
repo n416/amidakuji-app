@@ -134,8 +134,8 @@ export const EventEditView: React.FC = () => {
       const targetGroupId = groupId || eventData?.groupId;
 
       for (const { file, hash } of uniqueFiles) {
-        const { signedUrl, imageUrl } = await api.generateEventPrizeUploadUrl(currentEventId || 'temp', file.type, hash, targetGroupId);
-        const res = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+        const { signedUrl, imageUrl, requiredHeaders } = await api.generateEventPrizeUploadUrl(currentEventId || 'temp', file.type, hash, targetGroupId);
+        const res = await fetch(signedUrl, { method: 'PUT', headers: { ...requiredHeaders, 'Content-Type': file.type }, body: file });
         if (!res.ok) throw new Error('Upload failed');
         uploadedImageUrls[hash] = imageUrl;
       }
@@ -460,9 +460,15 @@ export const EventEditView: React.FC = () => {
                     ) : <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="placeholder" className="placeholder" />}
                     <input type="file" className="hidden-element" accept="image/*" disabled={isStarted} onChange={e => {
                       if (e.target.files && e.target.files[0]) {
-                        setCropperModalUrl(URL.createObjectURL(e.target.files[0]));
-                        setCropperCallback(() => (file: File | null) => {
-                          if (file) handlePrizeChange(i, 'newImageFile', file);
+                        const file = e.target.files[0];
+                        if (file.size > 10 * 1024 * 1024) {
+                          showToast('10MB以下の画像を選択してください');
+                          e.target.value = '';
+                          return;
+                        }
+                        setCropperModalUrl(URL.createObjectURL(file));
+                        setCropperCallback(() => (croppedFile: File | null) => {
+                          if (croppedFile) handlePrizeChange(i, 'newImageFile', croppedFile);
                           e.target.value = '';
                         });
                       }
@@ -701,11 +707,17 @@ export const EventEditView: React.FC = () => {
                 </label>
                 <input type="file" id="newPrizeImageInput" accept="image/*" className="visually-hidden" onChange={(e) => {
                   if (e.target.files?.[0]) {
-                    setCropperModalUrl(URL.createObjectURL(e.target.files[0]));
-                    setCropperCallback(() => (file: File | null) => {
-                      if (file) {
-                        setNewPrizeFile(file);
-                        setNewPrizeImageUrl(URL.createObjectURL(file));
+                    const file = e.target.files[0];
+                    if (file.size > 10 * 1024 * 1024) {
+                      showToast('10MB以下の画像を選択してください');
+                      e.target.value = '';
+                      return;
+                    }
+                    setCropperModalUrl(URL.createObjectURL(file));
+                    setCropperCallback(() => (croppedFile: File | null) => {
+                      if (croppedFile) {
+                        setNewPrizeFile(croppedFile);
+                        setNewPrizeImageUrl(URL.createObjectURL(croppedFile));
                       }
                       e.target.value = '';
                     });
@@ -808,7 +820,7 @@ export const EventEditView: React.FC = () => {
       )}
 
       {showPrizeMasterSelectModal && (
-        <div id="prizeMasterSelectModal" className="modal active z-3060">
+        <div id="prizeMasterSelectModal" className="modal active z-10001">
           <div className="modal-content max-w-800 w-90">
             <span className="close-button" onClick={() => { setShowPrizeMasterSelectModal(false); setSelectedMaster(null); }}><X /></span>
             <h3>景品マスターから選択</h3>

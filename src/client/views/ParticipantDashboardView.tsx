@@ -209,7 +209,7 @@ export const ParticipantDashboardView: React.FC = () => {
 
         const resUrl = await api.generateUploadUrl(participantId, newIconFile.type, fileHash, participantSession.token!);
         if (resUrl && resUrl.signedUrl) {
-          const resUpload = await fetch(resUrl.signedUrl, { method: 'PUT', headers: { 'Content-Type': newIconFile.type }, body: newIconFile });
+          const resUpload = await fetch(resUrl.signedUrl, { method: 'PUT', headers: { ...resUrl.requiredHeaders, 'Content-Type': newIconFile.type }, body: newIconFile });
           if (!resUpload.ok) throw new Error('画像のアップロードに失敗しました');
           iconUrlToSave = resUrl.imageUrl;
         }
@@ -460,6 +460,11 @@ export const ParticipantDashboardView: React.FC = () => {
                   onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      if (file.size > 10 * 1024 * 1024) {
+                        showToast('10MB以下の画像を選択してください');
+                        e.target.value = '';
+                        return;
+                      }
                       const reader = new FileReader();
                       reader.onload = ev => setCropTargetImage(ev.target?.result as string);
                       reader.readAsDataURL(file);

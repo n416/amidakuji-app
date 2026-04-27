@@ -16,6 +16,7 @@ type Bindings = {
   SESSION_SECRET: string;
   FIREBASE_SERVICE_ACCOUNT: string;
   GCS_BUCKET_NAME?: string;
+  BUCKET: any;
   ASSETS: { fetch: typeof fetch };
 };
 
@@ -48,6 +49,7 @@ app.get('/api/test', (c) => {
 import participantsRouter from './routes/participants';
 import publicRouter from './routes/public';
 import utilsRouter from './routes/utils';
+import storageRouter from './routes/storage';
 
 // ルートのマウント
 app.route('/auth', authRouter);
@@ -59,6 +61,7 @@ app.route('/api', membersRouter);
 app.route('/api', participantsRouter);
 app.route('/api', publicRouter);
 app.route('/api', utilsRouter);
+app.route('/api', storageRouter);
 
 // フロントエンド向け初期化設定API
 app.get('/api/config', (c) => {

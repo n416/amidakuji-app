@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { FirestoreClient } from '../utils/firestore-rest';
 import { requireAuth } from '../middleware/auth';
-import { generateV4UploadSignedUrl } from '../utils/gcs-signer';
+import { sign } from 'hono/jwt';
 import { getNextAvailableColor } from '../utils/color';
 import { hashPassword, verifyPassword } from '../utils/hash';
 
@@ -206,11 +206,20 @@ members.post('/members/:memberId/generate-upload-url', async (c) => {
       return c.json({ error: "Invalid type" }, 400);
     }
     const fileName = `shared_images/${fileHash}.${fileExt}`;
-    const bucketName = c.env.GCS_BUCKET_NAME || 'amidakuji-app-native-bucket';
-    const signedUrl = await generateV4UploadSignedUrl(c.env.FIREBASE_SERVICE_ACCOUNT, bucketName, fileName, fileType, 15 * 60);
+    
+    const tokenPayload = {
+      fileName,
+      fileType,
+      exp: Math.floor(Date.now() / 1000) + 180 // 3 minutes expiration
+    };
+    
+    const uploadToken = await sign(tokenPayload, c.env.JWT_SECRET || 'fallback_secret', 'HS256');
+    const signedUrl = `/api/uploads?token=${uploadToken}`;
+
     return c.json({
       signedUrl: signedUrl,
-      imageUrl: `https://storage.googleapis.com/${bucketName}/${fileName}`
+      requiredHeaders: {},
+      imageUrl: `/api/public-images/${encodeURIComponent(fileName)}`
     });
   } catch (error) {
     return c.json({ error: "Error generating URL" }, 500);

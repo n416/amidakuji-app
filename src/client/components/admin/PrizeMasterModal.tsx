@@ -56,9 +56,9 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
       const fileHash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
       const res = await api.generatePrizeMasterUploadUrl(groupId, newMasterFile.type, fileHash);
-      const { signedUrl, imageUrl } = res;
+      const { signedUrl, imageUrl, requiredHeaders } = res;
       
-      const resUpload = await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': newMasterFile.type }, body: newMasterFile });
+      const resUpload = await fetch(signedUrl, { method: 'PUT', headers: { ...requiredHeaders, 'Content-Type': newMasterFile.type }, body: newMasterFile });
       if (!resUpload.ok) throw new Error('Upload failed');
 
       await api.addPrizeMaster(groupId, newMasterName, imageUrl, newMasterRank);
@@ -114,6 +114,11 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
                 onChange={e => {
                   const file = e.target.files?.[0];
                   if (file) {
+                    if (file.size > 10 * 1024 * 1024) {
+                      setToastMessage('10MB以下の画像を選択してください');
+                      e.target.value = '';
+                      return;
+                    }
                     const reader = new FileReader();
                     reader.onload = ev => setCropTargetImage(ev.target?.result as string);
                     reader.readAsDataURL(file);
