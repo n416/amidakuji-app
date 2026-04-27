@@ -760,7 +760,7 @@ export const ParticipantView: React.FC = () => {
                 })()}
 
                 {!isShare && (
-                  <button className="secondary-btn" onClick={() => {
+                  <button className="secondary-btn mx-auto" onClick={() => {
                      const participation = eventData?.participants?.find((p: any) => p.memberId === myMemberId);
                      const shareUrl = `${window.location.origin}/share/${actualEventId}/${encodeURIComponent(participation?.name || '')}`;
                      navigator.clipboard.writeText(shareUrl)
@@ -772,7 +772,7 @@ export const ParticipantView: React.FC = () => {
                 )}
                 
                 {!isShare && (
-                  <button className="secondary-btn" onClick={async () => {
+                  <button className="secondary-btn mx-auto" onClick={async () => {
                     try {
                       const group = await api.getGroup(participantSession.groupId!);
                       if (group) {
