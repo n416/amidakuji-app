@@ -91,7 +91,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
 
   return (
     <>
-      <div className="modal" style={{ display: 'block' }}>
+      <div className="modal active">
         <div className="modal-content">
           <span className="close-button" onClick={onClose}><X size={28} /></span>
           <h3>賞品マスター管理</h3>
@@ -100,8 +100,8 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
           <div className="prize-master-form">
             <div className="prize-master-image-dropzone">
               <label htmlFor="newMasterImageUpload">
-                <img id="addMasterPrizeImagePreview" src={newMasterFilePreview || undefined} alt="プレビュー" style={{display: newMasterFilePreview ? 'block' : 'none'}} />
-                <div id="addMasterPrizePlaceholder" style={{display: newMasterFilePreview ? 'none' : 'flex'}}>
+                <img id="addMasterPrizeImagePreview" src={newMasterFilePreview || undefined} alt="プレビュー" className={newMasterFilePreview ? '' : 'hidden-element'} />
+                <div id="addMasterPrizePlaceholder" className={newMasterFilePreview ? 'hidden-element' : ''}>
                   <ImagePlus size={32} />
                   <span>クリックして画像を選択</span>
                 </div>
@@ -140,7 +140,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
               <button id="addMasterPrizeButton" className="primary-action" onClick={handleAddPrizeMaster}>マスターに追加</button>
             </div>
           </div>
-          {prizeMasterError && <p className="error-message" style={{color: 'var(--error-color)', margin: '10px 0', textAlign: 'center'}}>{prizeMasterError}</p>}
+          {prizeMasterError && <p className="error-message text-center my-10">{prizeMasterError}</p>}
 
           <ul id="prizeMasterList" className="item-list prize-master-list">
             {prizeMasters.map(pm => {
@@ -162,8 +162,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
                       {[...Array(5)].map((_, i) => (
                         <Star 
                           key={i} 
-                          className={`lucide-star ${i < config.stars ? 'filled' : ''}`} 
-                          style={i < config.stars ? { color: config.color, fill: config.color } : {}}
+                          className={`lucide-star star-color-${pm.rank} ${i < config.stars ? 'filled' : ''}`} 
                           size={16}
                         />
                       ))}

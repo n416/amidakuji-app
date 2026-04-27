@@ -92,7 +92,7 @@ export const Header: React.FC = () => {
         </div>
       )}
       {showAdminHeader && (
-        <header className="main-header" style={{ display: 'flex' }}>
+        <header className="main-header visible">
           <h1>ダイナミックあみだくじ</h1>
           <button 
             id="hamburger-button" 
@@ -117,7 +117,7 @@ export const Header: React.FC = () => {
                 <button id="currentGroupName">
                   {groups.find(g => g.id === window.location.pathname.split('/')[3])?.name || 'グループ切替'}
                 </button>
-                <div id="groupDropdown" className="dropdown-content" style={{ display: groupDropdownOpen ? 'block' : 'none' }}>
+                <div id="groupDropdown" className={`dropdown-content ${groupDropdownOpen ? 'open' : ''}`}>
                   <ul id="switcherGroupList">
                     {groups.map(g => (
                       <li key={g.id}>
@@ -128,7 +128,7 @@ export const Header: React.FC = () => {
                     ))}
                   </ul>
                   <button id="switcherCreateGroup" onClick={() => { setGroupDropdownOpen(false); setMenuOpen(false); navigate('/admin/groups'); }}>
-                    <Plus size={14} style={{verticalAlign: 'middle', marginRight: '5px'}} /> 新規グループ作成
+                    <Plus size={14} className="icon-inline mr-5" /> 新規グループ作成
                   </button>
                 </div>
               </div>
@@ -145,7 +145,7 @@ export const Header: React.FC = () => {
               <ChevronDown size={14} className="dropdown-arrow" />
             </button>
             {tutorialDropdownOpen && (
-              <div className="dropdown-content" style={{ display: 'block' }}>
+              <div className="dropdown-content open">
                 <Link to="/tutorials" className="dropdown-item-link" onClick={() => {setTutorialDropdownOpen(false); setMenuOpen(false);}}>
                   すべて表示
                 </Link>
@@ -164,31 +164,29 @@ export const Header: React.FC = () => {
                 <ChevronDown size={14} className="dropdown-arrow" />
               </button>
               {userDropdownOpen && (
-                <div className="dropdown-content" style={{ display: 'block' }}>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                <div className="dropdown-content open">
+                  <ul className="dropdown-list">
                     <li>
                       <Link 
                         to="/admin/dashboard" 
-                        className="dropdown-item-link" 
+                        className="dropdown-item-link dropdown-item-flex" 
                         onClick={() => {setUserDropdownOpen(false); setMenuOpen(false);}}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                       >
                         <Settings size={16}/> システム管理
                       </Link>
                     </li>
                     <li>
                       <button 
+                        className="dropdown-item-btn"
                         onClick={() => { handleLogout(); setUserDropdownOpen(false); setMenuOpen(false); }}
-                        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                       >
                         <LogOut size={16}/> ログアウト
                       </button>
                     </li>
                     <li>
                       <button 
-                        className="delete-btn"
+                        className="delete-btn dropdown-item-btn text-danger"
                         onClick={() => { handleDeleteAccount(); setUserDropdownOpen(false); setMenuOpen(false); }}
-                        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '10px 15px', cursor: 'pointer', color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '8px' }}
                       >
                         <Trash2 size={16}/> アカウント削除
                       </button>
@@ -208,11 +206,11 @@ export const Header: React.FC = () => {
       )}
       <ParticipantHeader />
       {showConfirmModal.isOpen && (
-        <div className="modal" style={{display: 'block', zIndex: 10000}}>
-          <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+        <div className="modal active">
+          <div className="modal-content text-center max-w-400">
             <h3>確認</h3>
-            <p style={{whiteSpace: 'pre-wrap'}}>{showConfirmModal.message}</p>
-            <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+            <p className="confirm-message">{showConfirmModal.message}</p>
+            <div className="modal-actions center gap-15">
               <button className="secondary-btn" onClick={() => setShowConfirmModal({...showConfirmModal, isOpen: false})}>キャンセル</button>
               <button className="primary-action" onClick={showConfirmModal.onConfirm}>OK</button>
             </div>
@@ -220,7 +218,7 @@ export const Header: React.FC = () => {
         </div>
       )}
       {toastMessage && (
-        <div className="toast active" style={{zIndex: 10001}}>
+        <div className="toast active">
           {toastMessage}
         </div>
       )}

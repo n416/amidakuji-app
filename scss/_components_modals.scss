@@ -11,6 +11,11 @@
   animation: fadeIn 0.3s;
 }
 
+.modal.active {
+  display: block;
+  z-index: 10000;
+}
+
 .modal-content {
   // ★★★ ここからが修正点 ★★★
   background-color: var(--white-color); // #fefefe から変数に変更
@@ -63,6 +68,30 @@
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid var(--border-color);
+}
+
+.modal-actions.center {
+  justify-content: center;
+}
+
+.modal-actions.gap-15 {
+  gap: 15px;
+}
+
+.modal-content.text-center {
+  text-align: center;
+}
+
+.modal-content.max-w-400 {
+  max-width: 400px;
+}
+
+.modal-content.max-w-500 {
+  max-width: 500px;
+}
+
+.modal-content.max-w-600 {
+  max-width: 600px;
 }
 
 .modal-actions .action-left {
@@ -126,6 +155,20 @@
 .cropper-container img {
   max-width: 100%;
 }
+
+.cropper-wrapper {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  background-color: #333;
+  margin-bottom: 20px;
+}
+
+.star-color-miss { color: #999; fill: #999; }
+.star-color-uncommon { color: #4caf50; fill: #4caf50; }
+.star-color-common { color: #2196f3; fill: #2196f3; }
+.star-color-rare { color: #9c27b0; fill: #9c27b0; }
+.star-color-epic { color: #f44336; fill: #f44336; }
 
 // 確認モーダルのメッセージテキスト
 .confirm-message {

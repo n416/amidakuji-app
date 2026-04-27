@@ -89,11 +89,11 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({ imageUrl, 
   };
 
   return (
-    <div className="modal" style={{ display: 'block', zIndex: 10000 }}>
-      <div className="modal-content" style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column' }}>
+    <div className="modal active">
+      <div className="modal-content max-w-400 flex-column">
         <span className="close-button" onClick={onCancel}>×</span>
         <h3>画像のトリミング</h3>
-        <div style={{ position: 'relative', width: '100%', height: '300px', backgroundColor: '#333', marginBottom: '20px' }}>
+        <div className="cropper-wrapper">
           <Cropper
             image={imageUrl}
             crop={crop}
@@ -104,7 +104,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({ imageUrl, 
             onZoomChange={setZoom}
           />
         </div>
-        <div className="modal-actions" style={{ marginTop: 'auto' }}>
+        <div className="modal-actions mt-auto">
           <button className="primary-action" onClick={handleConfirm}>確定</button>
         </div>
       </div>

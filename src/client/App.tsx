@@ -60,7 +60,7 @@ const App: React.FC = () => {
 
   if (!isFirebaseReady) {
     return (
-      <div id="globalLoadingMask" className="loading-mask" style={{position: 'fixed', display: 'flex', zIndex: '9999', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.8)'}}>
+      <div id="globalLoadingMask" className="loading-mask global-loading-mask">
         <p>Firebase 初期化中...</p>
       </div>
     );
@@ -69,7 +69,7 @@ const App: React.FC = () => {
   return (
     <>
       
-  <div id="globalLoadingMask" className="loading-mask" style={{position: 'fixed', display: 'none', zIndex: '9999'}}>
+  <div id="globalLoadingMask" className="loading-mask hidden-element">
     <p>読み込み中...</p>
   </div>
   
@@ -98,15 +98,15 @@ const App: React.FC = () => {
     </div>
 
     {toastMessage && (
-      <div className="toast active" style={{zIndex: 10001}}>{toastMessage}</div>
+      <div className="toast active">{toastMessage}</div>
     )}
 
     {confirmState?.isOpen && (
-      <div className="modal" style={{display: 'block', zIndex: 10000}}>
-        <div className="modal-content" style={{maxWidth: '400px', textAlign: 'center'}}>
+      <div className="modal active">
+        <div className="modal-content text-center max-w-400">
           <h3>確認</h3>
-          <p style={{whiteSpace: 'pre-wrap'}}>{confirmState.message}</p>
-          <div className="modal-actions" style={{justifyContent: 'center', gap: '15px'}}>
+          <p className="confirm-message">{confirmState.message}</p>
+          <div className="modal-actions center gap-15">
             <button className="secondary-btn" onClick={() => { setConfirmState(null); confirmState.resolve(false); }}>キャンセル</button>
             <button className="primary-action" onClick={() => { setConfirmState(null); confirmState.resolve(true); }}>OK</button>
           </div>

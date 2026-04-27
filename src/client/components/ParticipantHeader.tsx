@@ -41,16 +41,16 @@ export const ParticipantHeader: React.FC = () => {
   };
 
   return (
-    <header className="participant-header" id="participantHeader" style={{ display: 'flex' }}>
+    <header className="participant-header visible" id="participantHeader">
       <div className="header-content-wrapper">
         {!isLoggedIn ? (
-          <div id="participant-header-logged-out" style={{ display: 'flex', width: '100%', justifyContent: 'flex-end' }}>
+          <div id="participant-header-logged-out" className="flex-end">
             <div className="participant-header-actions">
               <button className="button" onClick={handleDashboard}>ダッシュボード</button>
             </div>
           </div>
         ) : (
-          <div id="participant-header-logged-in" style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div id="participant-header-logged-in" className="flex-center-between">
             <div id="participantWelcomeMessage">ようこそ、{participantName}さん</div>
             <div className="participant-header-actions">
               <button className="button" onClick={handleDashboard}>ダッシュボード</button>

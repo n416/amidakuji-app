@@ -52,6 +52,10 @@
   width: 100%;
 }
 
+.participant-header.visible {
+  display: flex;
+}
+
 .participant-header-actions {
   display: flex;
   align-items: center;
@@ -62,6 +66,19 @@
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+.flex-center-between {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-end {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
 }
 
 #nav-menu {

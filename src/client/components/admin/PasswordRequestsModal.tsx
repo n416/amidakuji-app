@@ -42,14 +42,14 @@ export const PasswordRequestsModal: React.FC<PasswordRequestsModalProps> = ({
   };
 
   return (
-    <div className="modal" style={{ display: 'block' }}>
+    <div className="modal active">
       <div className="modal-content">
         <span className="close-button" onClick={onClose}><X size={28} /></span>
         <h3>合言葉リセット依頼</h3>
         <p>以下のユーザーが合言葉を忘れたため、リセット（削除）を依頼しています。</p>
         <ul className="item-list">
           {passwordRequests.map(req => (
-            <li key={req.id} className="item-list-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <li key={req.id} className="item-list-item flex-center-between">
               <span>{req.memberName}</span>
               <button className="primary-action" onClick={() => handleApprovePasswordReset(req.memberId, req.id)}>削除を承認</button>
             </li>

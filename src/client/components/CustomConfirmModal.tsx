@@ -8,11 +8,11 @@ interface CustomConfirmModalProps {
 
 export const CustomConfirmModal: React.FC<CustomConfirmModalProps> = ({ message, options, onSelect }) => {
   return (
-    <div className="modal" style={{ display: 'block', zIndex: 10001 }}>
-      <div className="modal-content" style={{ maxWidth: '400px' }}>
+    <div className="modal active z-10001">
+      <div className="modal-content max-w-400">
         <span className="close-button" onClick={() => onSelect(null)}>×</span>
-        <p style={{ marginBottom: '20px', lineHeight: '1.5' }}>{message}</p>
-        <div className="modal-actions" style={{ justifyContent: 'flex-end', gap: '10px' }}>
+        <p className="confirm-message">{message}</p>
+        <div className="modal-actions center gap-15">
           {options.map((opt, index) => (
             <button key={index} className={index === 0 ? "primary-action" : "secondary-btn"} onClick={() => onSelect(opt)}>
               {opt}

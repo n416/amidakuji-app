@@ -72,7 +72,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   if (!localSettingsGroup) return null;
 
   return (
-    <div id="groupSettingsModal" className="modal" style={{display: 'block', zIndex: 2000}}>
+    <div id="groupSettingsModal" className="modal active">
       <div className="modal-content">
         <span className="close-button" onClick={onClose}><X /></span>
         <form onSubmit={handleSaveSettings}>
@@ -90,7 +90,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
           </p>
           <div className="input-group">
             <label htmlFor="groupPasswordInput">合言葉:</label>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="flex-gap-8">
               <input 
                 type="password" 
                 id="groupPasswordInput" 
@@ -98,7 +98,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                 onChange={e => setSettingsData({...settingsData, password: e.target.value})} 
                 placeholder={localSettingsGroup.hasPassword ? "新規設定・変更のみ入力（現在設定済）" : "新規設定・変更のみ入力"}
                 autoComplete="current-password"
-                style={{ flex: 1 }}
+                className="flex-1"
               />
               <button 
                 type="button" 

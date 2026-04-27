@@ -180,3 +180,54 @@ body.light-mode .toast-notification {
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
+
+.global-loading-mask {
+  position: fixed;
+  display: flex;
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.hidden-element {
+  display: none !important;
+}
+
+.icon-inline {
+  vertical-align: middle;
+}
+
+.mr-5 {
+  margin-right: 5px;
+}
+
+.z-10001 {
+  z-index: 10001 !important;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.mt-auto {
+  margin-top: auto;
+}
+
+.my-10 {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.flex-gap-8 {
+  display: flex;
+  gap: 8px;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
