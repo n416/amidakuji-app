@@ -583,7 +583,7 @@ export const ParticipantView: React.FC = () => {
   return (
     <div id="participantView" className="view-container">
       <h2 id="participantEventName">{eventData?.eventName || '無題のイベント'}</h2>
-      {!isShare && (
+      {!isShare && myMemberId && (
         <div className="event-header">
           <button 
             className="button back-btn" 

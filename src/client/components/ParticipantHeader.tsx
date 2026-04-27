@@ -19,11 +19,16 @@ export const ParticipantHeader: React.FC = () => {
 
   const isShareView = location.pathname.startsWith('/share/');
 
-  const isLoggedIn = !!(participantSession.memberId && participantSession.token);
+  const isLoggedIn = !!(
+    participantSession.memberId && 
+    participantSession.token && 
+    lotteryState.currentGroupId && 
+    participantSession.groupId === lotteryState.currentGroupId
+  );
   const participantName = participantSession.name || '';
-  const groupId = participantSession.groupId || lotteryState.currentGroupId;
+  const groupId = lotteryState.currentGroupId || participantSession.groupId;
 
-  if (!isParticipantView || isShareView) {
+  if (!isParticipantView || isShareView || !isLoggedIn) {
     return null;
   }
 
@@ -43,21 +48,13 @@ export const ParticipantHeader: React.FC = () => {
   return (
     <header className="participant-header visible" id="participantHeader">
       <div className="header-content-wrapper">
-        {!isLoggedIn ? (
-          <div id="participant-header-logged-out" className="flex-end">
-            <div className="participant-header-actions">
-              <button className="button" onClick={handleDashboard}>ダッシュボード</button>
-            </div>
+        <div id="participant-header-logged-in" className="flex-center-between">
+          <div id="participantWelcomeMessage">ようこそ、{participantName}さん</div>
+          <div className="participant-header-actions">
+            <button className="button" onClick={handleDashboard}>ダッシュボード</button>
+            <button className="secondary-btn" onClick={handleLogout}>ログアウト</button>
           </div>
-        ) : (
-          <div id="participant-header-logged-in" className="flex-center-between">
-            <div id="participantWelcomeMessage">ようこそ、{participantName}さん</div>
-            <div className="participant-header-actions">
-              <button className="button" onClick={handleDashboard}>ダッシュボード</button>
-              <button className="secondary-btn" onClick={handleLogout}>ログアウト</button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </header>
   );

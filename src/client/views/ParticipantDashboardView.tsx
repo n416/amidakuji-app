@@ -278,12 +278,8 @@ export const ParticipantDashboardView: React.FC = () => {
 
   return (
     <div className="view-container">
-      <div className="event-header">
-        <button className="button back-btn" onClick={() => navigate(group.customUrl ? `/g/${group.customUrl}` : `/groups/${group.id}`)}>
-          <ArrowLeft size={16} className="mr-5"/> イベント一覧に戻る
-        </button>
-      </div>
-      <h2>{group?.name} のダッシュボード</h2>
+
+      <h2>{group?.name}</h2>
 
       <div id="participantFlow">
         {!isLoggedIn ? (

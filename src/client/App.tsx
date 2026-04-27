@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { store } from './store';
 import { Header } from './components/Header';
 import { LandingView } from './views/LandingView';
 import { DashboardView } from './views/DashboardView';
 import { GroupDashboardView } from './views/GroupDashboardView';
 import { AdminDashboardView } from './views/AdminDashboardView';
-import { GroupEventListView } from './views/GroupEventListView';
+
 import { ParticipantDashboardView } from './views/ParticipantDashboardView';
 import { MemberManagementView } from './views/MemberManagementView';
 import { EventEditView } from './views/EventEditView';
@@ -86,8 +86,8 @@ const App: React.FC = () => {
       <Route path="/admin/event/:eventId/broadcast" element={<BroadcastView />} />
       <Route path="/admin/group/:groupId/event/new" element={<EventEditView />} />
       <Route path="/admin/groups/:groupId/members" element={<MemberManagementView />} />
-      <Route path="/groups/:groupId" element={<GroupEventListView />} />
-      <Route path="/g/:customUrl" element={<GroupEventListView />} />
+      <Route path="/groups/:groupId" element={<Navigate replace to="dashboard" />} />
+      <Route path="/g/:customUrl" element={<Navigate replace to="dashboard" />} />
       <Route path="/groups/:groupId/dashboard" element={<ParticipantDashboardView />} />
       <Route path="/g/:customUrl/dashboard" element={<ParticipantDashboardView />} />
       <Route path="/events/:eventId" element={<ParticipantView />} />
