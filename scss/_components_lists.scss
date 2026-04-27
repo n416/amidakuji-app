@@ -34,6 +34,10 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.list-item-link {
+  cursor: pointer;
+}
+
 .list-item-link::after {
   content: '>';
   font-weight: bold;
