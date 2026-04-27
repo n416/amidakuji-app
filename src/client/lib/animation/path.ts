@@ -29,14 +29,14 @@ export function calculatePrizeAreaHeight(prizes: Prize[] = []) {
   }, 0);
 }
 
-export function getNameAreaHeight(container: any) {
+export function getNameAreaHeight(container: Element | null) {
   if (container && container.classList.contains('fullscreen-mode')) {
     return 160;
   }
   return 80;
 }
 
-export function getTargetHeight(container: any) {
+export function getTargetHeight(container: Element | null) {
   const nameAreaHeight = getNameAreaHeight(container);
   const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
   const minAmidaHeight = 300;
@@ -52,7 +52,7 @@ export function getVirtualWidth(numParticipants: number, containerWidth: number)
   return Math.max(containerWidth, calculatedWidth);
 }
 
-export function calculatePath(startIdx: number, allLines: (Line | Doodle)[], numParticipants: number, containerWidth: number, containerHeight: number, container: any) {
+export function calculatePath(startIdx: number, allLines: (Line | Doodle)[], numParticipants: number, containerWidth: number, containerHeight: number, container: Element | null) {
   const VIRTUAL_WIDTH = getVirtualWidth(numParticipants, containerWidth);
   const path = [];
   const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
@@ -90,7 +90,7 @@ export function calculatePath(startIdx: number, allLines: (Line | Doodle)[], num
   return path;
 }
 
-export function calculateAllPaths(participants: Participant[], allLines: (Line | Doodle)[], containerWidth: number, containerHeight: number, container: any) {
+export function calculateAllPaths(participants: Participant[], allLines: (Line | Doodle)[], containerWidth: number, containerHeight: number, container: Element | null) {
   const numParticipants = participants.length;
   const VIRTUAL_WIDTH = getVirtualWidth(numParticipants, containerWidth);
   const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
@@ -111,13 +111,13 @@ export function calculateAllPaths(participants: Participant[], allLines: (Line |
   });
 
   // 2. 各水平線ごとに通過する参加者を特定し、オフセットを計算
-  const offsets: any = {}; // { participantIndex: { y_coord: y_offset } }
+  const offsets: Record<number, Record<number, number>> = {}; // { participantIndex: { y_coord: y_offset } }
   const OFFSET_Y = 5; // 5pxずらす
 
   sortedLines.forEach((line) => {
-    const crossingParticipants = idealPaths.filter((p: any) => p.idealPath.some((step: any) => step.line === line)).sort((a: any, b: any) => a.slot - b.slot); // slot番号でソート
+    const crossingParticipants = idealPaths.filter((p) => p.idealPath.some((step) => step.line === line)).sort((a, b) => a.slot - b.slot); // slot番号でソート
 
-    crossingParticipants.forEach((p: any, orderIndex: number) => {
+    crossingParticipants.forEach((p, orderIndex: number) => {
       if (!offsets[p.participantIndex]) {
         offsets[p.participantIndex] = {};
       }
@@ -178,7 +178,7 @@ export function calculateAllPaths(participants: Participant[], allLines: (Line |
 }
 
 export function calculateClientSideResults(participants: Participant[], lines: Line[], prizes: Prize[], doodles: Doodle[] = []) {
-  const results: any = {};
+  const results: Record<string, any> = {};
   if (!participants || !prizes) return results;
   const numParticipants = participants.length;
   const allLines = [...(lines || []), ...(doodles || [])];

@@ -4,11 +4,11 @@ import {calculateAllPaths, getTargetHeight, calculatePrizeAreaHeight} from './pa
 import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes} from './drawing';
 import {Participant, Prize, Tracer} from './types';
 
-export let adminPanzoom: any = null;
-export let participantPanzoom: any = null;
-let currentAdminPanzoomElement: any = null;
-let currentParticipantPanzoomElement: any = null;
-let resizeDebounceTimer: any;
+export let adminPanzoom: ReturnType<typeof import("@panzoom/panzoom").default> | null = null;
+export let participantPanzoom: ReturnType<typeof import("@panzoom/panzoom").default> | null = null;
+let currentAdminPanzoomElement: HTMLElement | null = null;
+let currentParticipantPanzoomElement: HTMLElement | null = null;
+let resizeDebounceTimer: number | NodeJS.Timeout;
 
 export function resetParticipantPanzoom() {
   if (participantPanzoom) {
@@ -26,8 +26,8 @@ export function resetAdminPanzoom() {
   }
 }
 
-export function initializePanzoom(canvasElement: any) {
-  if (!canvasElement) return null;
+export function initializePanzoom(canvasElement: HTMLCanvasElement | null) {
+  if (!canvasElement || !canvasElement.parentElement) return null;
 
   const panzoomElement = canvasElement.parentElement;
   const isParticipantCanvas = canvasElement.id === 'participantCanvas' || canvasElement.id === 'participantCanvasStatic';
@@ -57,18 +57,19 @@ export function initializePanzoom(canvasElement: any) {
 
   const container = canvasElement.closest('.canvas-panzoom-container');
 
-  const wheelListener = (event: any) => {
-    if (!event.shiftKey) {
-      panzoom.zoomWithWheel(event);
+  const wheelListener = (event: Event) => {
+    const wheelEvent = event as WheelEvent;
+    if (!wheelEvent.shiftKey) {
+      panzoom.zoomWithWheel(wheelEvent);
     }
   };
 
   if (container) {
-    if (container._wheelListener) {
-      container.removeEventListener('wheel', container._wheelListener);
+    if ((container as any)._wheelListener) {
+      container.removeEventListener('wheel', (container as any)._wheelListener);
     }
     container.addEventListener('wheel', wheelListener, { passive: false });
-    container._wheelListener = wheelListener;
+    (container as any)._wheelListener = wheelListener;
   }
 
   if (canvasElement.id === 'adminCanvas') {
@@ -132,21 +133,21 @@ export function handleResize() {
   }
 
   console.log('[Animation] Animation is NOT running, redrawing static canvas.');
-  const adminCanvas: any = document.getElementById('adminCanvas');
-  const participantCanvas: any = document.getElementById('participantCanvas');
-  const participantCanvasStatic: any = document.getElementById('participantCanvasStatic');
+  const adminCanvas = document.getElementById('adminCanvas') as HTMLCanvasElement | null;
+  const participantCanvas = document.getElementById('participantCanvas') as HTMLCanvasElement | null;
+  const participantCanvasStatic = document.getElementById('participantCanvasStatic') as HTMLCanvasElement | null;
 
   if (adminCanvas && adminCanvas.offsetParent !== null) {
     console.log('[Animation] Redrawing admin canvas for resize.');
     const hidePrizes = animator.lotteryData?.status !== 'started';
-    prepareStepAnimation(adminCanvas.getContext('2d'), hidePrizes, false, true);
+    prepareStepAnimation(adminCanvas.getContext('2d')!, hidePrizes, false, true);
   } else if (participantCanvas && participantCanvas.offsetParent !== null) {
     console.log('[Animation] Redrawing participant canvas for resize.');
     const hidePrizes = animator.lotteryData?.displayMode === 'private' && animator.lotteryData?.status !== 'started';
-    prepareStepAnimation(participantCanvas.getContext('2d'), hidePrizes, false, true);
+    prepareStepAnimation(participantCanvas.getContext('2d')!, hidePrizes, false, true);
   } else if (participantCanvasStatic && participantCanvasStatic.offsetParent !== null) {
     console.log('[Animation] Redrawing static participant canvas for resize.');
-    prepareStepAnimation(participantCanvasStatic.getContext('2d'), true, false, true);
+    prepareStepAnimation(participantCanvasStatic.getContext('2d')!, true, false, true);
   }
 }
 
@@ -155,7 +156,7 @@ window.addEventListener('resize', () => {
   resizeDebounceTimer = setTimeout(handleResize, 350);
 });
 
-export async function prepareStepAnimation(targetCtx: CanvasRenderingContext2D, hidePrizes = false, showMask = true, isResize = false, storedState: any = null, keepRevealed = false, onlyTracerName: any = null) {
+export async function prepareStepAnimation(targetCtx: CanvasRenderingContext2D, hidePrizes = false, showMask = true, isResize = false, storedState: {pan: {x: number, y: number}, scale: number} | null = null, keepRevealed = false, onlyTracerName: string | null = null) {
   if (!targetCtx || !animator.lotteryData) {
     console.error('[Animation] Prepare failed: No context or lottery data.');
     return;
@@ -185,7 +186,7 @@ export async function prepareStepAnimation(targetCtx: CanvasRenderingContext2D, 
 
   animator.tracers = allParticipantsWithNames.map((p: Participant) => {
     const path = allPaths[p.slot];
-    const isFinished = animator.revealedPrizes.some((r: any) => r.participantName === p.name);
+    const isFinished = animator.revealedPrizes.some((r) => r.participantName === p.name);
     const finalPoint = isFinished ? path[path.length - 1] : path[0];
     return {
       name: p.name!,

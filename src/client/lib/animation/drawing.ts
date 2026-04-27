@@ -3,9 +3,9 @@
 import {animator, isAnimationRunning, stopAnimation, updateRevealedPrizes} from './core';
 import {calculateAllPaths, getTargetHeight, getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight} from './path';
 import {preloadIcons} from './setup';
-import {Participant, Prize, Doodle, Line, Tracer, LotteryData} from './types';
+import {Participant, Prize, Doodle, Line, Tracer, LotteryData, RevealedPrize} from './types';
 
-export function wrapText(context: any, text: string, x: number, y: number, lineLength: number, lineHeight: number) {
+export function wrapText(context: CanvasRenderingContext2D, text: string, x: number, y: number, lineLength: number, lineHeight: number) {
   if (!text) return;
   let currentY = y;
   for (let i = 0; i < text.length; i += lineLength) {
@@ -59,7 +59,7 @@ export function drawLotteryBase(targetCtx: CanvasRenderingContext2D, data: Lotte
 
     targetCtx.fillStyle = p.name ? mainTextColor : subTextColor;
     targetCtx.fillText(displayName, x, nameY);
-    const isRevealed = animator.revealedPrizes.some((r: any) => r.prizeIndex === i);
+    const isRevealed = animator.revealedPrizes.some((r) => r.prizeIndex === i);
     if (prizes && prizes[i] && !isRevealed) {
       const prize = prizes[i];
       const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
@@ -127,7 +127,7 @@ export function drawLotteryBase(targetCtx: CanvasRenderingContext2D, data: Lotte
 
 function drawDoodleLine(targetCtx: CanvasRenderingContext2D, doodle: Doodle, color: string, isDashed = true) {
   if (!doodle || !animator.lotteryData) return;
-  const {participants}: any = animator.lotteryData!;
+  const {participants} = animator.lotteryData!;
   const numParticipants = participants.length;
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
@@ -226,7 +226,7 @@ export function drawRevealedPrizes(targetCtx: CanvasRenderingContext2D) {
   targetCtx.fillStyle = isDarkMode ? '#e0e0e0' : '#333';
   const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
   const lineBottomY = VIRTUAL_HEIGHT - prizeAreaHeight;
-  animator.revealedPrizes.forEach((result: any) => {
+  animator.revealedPrizes.forEach((result) => {
     const prize = result.prize;
     const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
     const prizeName = actualPrizeName || '';
@@ -286,11 +286,11 @@ export async function showAllTracersInstantly() {
             prize: realPrize,
             prizeIndex,
             revealProgress: 15,
-          }; // 15 is max
+          } as RevealedPrize;
         }
         return null;
       })
-      .filter(Boolean);
+      .filter((item): item is RevealedPrize => item !== null);
     updateRevealedPrizes(allRevealedPrizes);
   }
   const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];

@@ -3,7 +3,7 @@ import { FirestoreClient } from '../utils/firestore-rest';
 import { requireAuth } from '../middleware/auth';
 import { generateV4UploadSignedUrl } from '../utils/gcs-signer';
 import { getNextAvailableColor } from '../utils/color';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from '../utils/hash';
 
 const members = new Hono<{ Bindings: any; Variables: any; }>();
 
@@ -103,7 +103,7 @@ members.post('/members/:memberId/set-password', async (c) => {
     const memberData = db.firestoreToJson(doc);
     if (memberData.deleteToken !== token) return c.json({ error: 'Unauthorized' }, 403);
 
-    const passwordPayload = password ? await bcrypt.hash(password, 10) : null;
+    const passwordPayload = password ? await hashPassword(password) : null;
     await db.patchDocument(`groups/${groupId}/members/${memberId}`, { password: passwordPayload });
     return c.json({ message: password ? 'Password set' : 'Password deleted' }, 200);
   } catch (error) {

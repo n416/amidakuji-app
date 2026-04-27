@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { FirestoreClient } from '../utils/firestore-rest';
 import { requireAuth } from '../middleware/auth';
 import { getNextAvailableColor } from '../utils/color';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from '../utils/hash';
 
 const participants = new Hono<{ Bindings: any, Variables: any }>();
 
@@ -289,7 +289,7 @@ participants.post('/events/:eventId/verify-password', async (c) => {
     const memberData = db.firestoreToJson(memberDoc);
     if (!memberData.password) return c.json({ error: 'ユーザーが見つからないか、合言葉が設定されていません。' }, 401);
 
-    const match = await bcrypt.compare(password, memberData.password);
+    const match = await verifyPassword(password, memberData.password);
     if (!match) return c.json({ error: '合言葉が違います。' }, 401);
 
     if (slot !== undefined && slot !== null && eventData.status !== 'started') {

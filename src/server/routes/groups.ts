@@ -3,7 +3,7 @@ import { FirestoreClient } from '../utils/firestore-rest';
 import { requireAuth } from '../middleware/auth';
 import { sign } from 'hono/jwt';
 import { generateV4UploadSignedUrl } from '../utils/gcs-signer';
-import bcrypt from 'bcryptjs';
+import { hashPassword, verifyPassword } from '../utils/hash';
 import { setCookie, getCookie } from 'hono/cookie';
 
 function generateRandomHex(length: number): string {
@@ -131,7 +131,7 @@ groups.put('/groups/:groupId/settings', requireAuth, async (c) => {
     if (settings.customUrl !== undefined) updatePayload.customUrl = settings.customUrl.trim();
     if (settings.noIndex !== undefined) updatePayload.noIndex = !!settings.noIndex;
     if (settings.password) {
-      updatePayload.password = await bcrypt.hash(settings.password, 10);
+      updatePayload.password = await hashPassword(settings.password);
     }
     
     await db.patchDocument(`groups/${groupId}`, updatePayload);
@@ -218,7 +218,7 @@ groups.post('/groups/:groupId/login-or-register', async (c) => {
 
       if (data.password) {
          if (!password) return c.json({ error: 'Password required', requiresPassword: true }, 401);
-         const match = await bcrypt.compare(password, data.password);
+         const match = await verifyPassword(password, data.password);
          if (!match) return c.json({ error: 'Invalid password', requiresPassword: true }, 401);
       }
 
@@ -232,7 +232,7 @@ groups.post('/groups/:groupId/login-or-register', async (c) => {
     const newMember = {
       name: normalized,
       createdAt: new Date().toISOString(),
-      password: password ? await bcrypt.hash(password, 10) : null,
+      password: password ? await hashPassword(password) : null,
       deleteToken: deleteToken,
       color: '#007bff', // default color or maybe we should fetch existing to generate one, but this is fine
       iconUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(normalized)}&background=random&color=fff`,
@@ -258,7 +258,7 @@ groups.post('/groups/:groupId/verify-password', async (c) => {
     if (!doc) return c.json({ error: 'Group not found' }, 404);
     
     const groupData = db.firestoreToJson(doc);
-    const match = groupData.password ? await bcrypt.compare(password, groupData.password) : true;
+    const match = groupData.password ? await verifyPassword(password, groupData.password) : true;
     if (match) {
       const verifiedStr = getCookie(c, 'verifiedGroups') || '';
       const verifiedGroups = new Set(verifiedStr.split(',').filter(Boolean));
