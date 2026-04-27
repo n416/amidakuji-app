@@ -140,7 +140,7 @@ export const BroadcastView: React.FC = () => {
         
         <div className={`canvas-panzoom-container ${isFullscreen ? 'fullscreen-mode' : ''}`}>
           {isPending && (
-            <div id="adminControls" className="floating-controls center-absolute">
+            <div id="adminControls" className="center-absolute">
               <button id="startEventButton" className="primary-action btn-large" onClick={handleStartEvent}>
                 <PartyPopper size={24} className="mr-10" /> イベント開始！
               </button>
