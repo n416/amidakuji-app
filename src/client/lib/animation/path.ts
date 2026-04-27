@@ -1,7 +1,9 @@
-﻿// @ts-nocheck
-import {animator} from './core';
 
-function calculateMaxPrizeLines(prizes = []) {
+
+import {animator} from './core';
+import {Participant, Prize, Line, Doodle, Point} from './types';
+
+function calculateMaxPrizeLines(prizes: Prize[] = []) {
   if (!prizes || prizes.length === 0) return 1;
   const maxLineLength = 5;
   return prizes.reduce((maxLines, prize) => {
@@ -10,7 +12,7 @@ function calculateMaxPrizeLines(prizes = []) {
   }, 1);
 }
 
-export function calculatePrizeAreaHeight(prizes = []) {
+export function calculatePrizeAreaHeight(prizes: Prize[] = []) {
   if (!prizes || prizes.length === 0) {
     return 80;
   }
@@ -27,14 +29,14 @@ export function calculatePrizeAreaHeight(prizes = []) {
   }, 0);
 }
 
-export function getNameAreaHeight(container) {
+export function getNameAreaHeight(container: any) {
   if (container && container.classList.contains('fullscreen-mode')) {
     return 160;
   }
   return 80;
 }
 
-export function getTargetHeight(container) {
+export function getTargetHeight(container: any) {
   const nameAreaHeight = getNameAreaHeight(container);
   const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
   const minAmidaHeight = 300;
@@ -44,13 +46,13 @@ export function getTargetHeight(container) {
   return nameAreaHeight + minAmidaHeight + prizeAreaHeight;
 }
 
-export function getVirtualWidth(numParticipants, containerWidth) {
+export function getVirtualWidth(numParticipants: number, containerWidth: number) {
   const minWidthPerParticipant = 80;
   const calculatedWidth = numParticipants * minWidthPerParticipant;
   return Math.max(containerWidth, calculatedWidth);
 }
 
-export function calculatePath(startIdx, allLines, numParticipants, containerWidth, containerHeight, container) {
+export function calculatePath(startIdx: number, allLines: (Line | Doodle)[], numParticipants: number, containerWidth: number, containerHeight: number, container: any) {
   const VIRTUAL_WIDTH = getVirtualWidth(numParticipants, containerWidth);
   const path = [];
   const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
@@ -88,7 +90,7 @@ export function calculatePath(startIdx, allLines, numParticipants, containerWidt
   return path;
 }
 
-export function calculateAllPaths(participants, allLines, containerWidth, containerHeight, container) {
+export function calculateAllPaths(participants: Participant[], allLines: (Line | Doodle)[], containerWidth: number, containerHeight: number, container: any) {
   const numParticipants = participants.length;
   const VIRTUAL_WIDTH = getVirtualWidth(numParticipants, containerWidth);
   const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
@@ -96,8 +98,8 @@ export function calculateAllPaths(participants, allLines, containerWidth, contai
 
 
   // 1. 各参加者の理想経路（Ideal Path）を計算
-  const idealPaths = participants.map((p, index) => {
-    const path = [];
+  const idealPaths = participants.map((p: Participant, index: number) => {
+    const path: {y: number, line: Line | Doodle}[] = [];
     let currentPathIdx = index;
     sortedLines.forEach((line) => {
       if (line.fromIndex === currentPathIdx || line.toIndex === currentPathIdx) {
@@ -109,13 +111,13 @@ export function calculateAllPaths(participants, allLines, containerWidth, contai
   });
 
   // 2. 各水平線ごとに通過する参加者を特定し、オフセットを計算
-  const offsets = {}; // { participantIndex: { y_coord: y_offset } }
+  const offsets: any = {}; // { participantIndex: { y_coord: y_offset } }
   const OFFSET_Y = 5; // 5pxずらす
 
   sortedLines.forEach((line) => {
-    const crossingParticipants = idealPaths.filter((p) => p.idealPath.some((step) => step.line === line)).sort((a, b) => a.slot - b.slot); // slot番号でソート
+    const crossingParticipants = idealPaths.filter((p: any) => p.idealPath.some((step: any) => step.line === line)).sort((a: any, b: any) => a.slot - b.slot); // slot番号でソート
 
-    crossingParticipants.forEach((p, orderIndex) => {
+    crossingParticipants.forEach((p: any, orderIndex: number) => {
       if (!offsets[p.participantIndex]) {
         offsets[p.participantIndex] = {};
       }
@@ -128,8 +130,8 @@ export function calculateAllPaths(participants, allLines, containerWidth, contai
   console.groupEnd();
 
   // 3. 最終的な描画パスを生成
-  const finalPaths = {};
-  participants.forEach((p, index) => {
+  const finalPaths: Record<number, Point[]> = {};
+  participants.forEach((p: Participant, index: number) => {
     if (!p.name) return;
 
     const nameAreaHeight = getNameAreaHeight(container);
@@ -139,7 +141,7 @@ export function calculateAllPaths(participants, allLines, containerWidth, contai
     const amidaDrawableHeight = lineBottomY - lineTopY;
     const sourceLineRange = 330 - 70;
 
-    const finalPath = [];
+    const finalPath: Point[] = [];
     let currentPathIdx = index;
     let currentY = lineTopY;
 
@@ -175,8 +177,8 @@ export function calculateAllPaths(participants, allLines, containerWidth, contai
   return finalPaths;
 }
 
-export function calculateClientSideResults(participants, lines, prizes, doodles = []) {
-  const results = {};
+export function calculateClientSideResults(participants: Participant[], lines: Line[], prizes: Prize[], doodles: Doodle[] = []) {
+  const results: any = {};
   if (!participants || !prizes) return results;
   const numParticipants = participants.length;
   const allLines = [...(lines || []), ...(doodles || [])];

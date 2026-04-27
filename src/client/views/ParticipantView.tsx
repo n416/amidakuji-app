@@ -9,11 +9,8 @@ import { setParticipantSession, clearParticipantSession } from '../store/partici
 import { setCurrentGroupId, setCurrentLotteryData } from '../store/lotterySlice';
 import { ArrowLeft, PartyPopper, Hand, Pencil, Eraser, Gift, Lock, X } from 'lucide-react';
 import { useAmidaAnimation } from '../hooks/useAmidaAnimation';
-// @ts-ignore
 import { participantPanzoom, resetParticipantPanzoom } from '../lib/animation/setup';
-// @ts-ignore
 import { getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight, getTargetHeight } from '../lib/animation/path';
-// @ts-ignore
 import { drawLotteryBase, drawDoodleHoverPreview, drawDoodlePreview } from '../lib/animation/drawing';
 
 export const ParticipantView: React.FC = () => {
@@ -169,7 +166,6 @@ export const ParticipantView: React.FC = () => {
       dispatch(setCurrentLotteryData(eventData));
       setAnimatorState({ lotteryData: eventData });
       if (staticCanvasRef.current) {
-        // @ts-ignore
         const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
         prepareStep(staticCanvasRef, true, false, false, storedState);
       }

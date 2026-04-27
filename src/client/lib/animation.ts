@@ -1,20 +1,20 @@
-﻿// @ts-nocheck
-import {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator, setAnimatorState} from './animation/core';
-import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes, wrapText, showAllTracersInstantly} from './animation/drawing';
-import {calculatePath, getVirtualWidth, getTargetHeight, calculatePrizeAreaHeight, getNameAreaHeight, calculateClientSideResults} from './animation/path';
-import {prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, handleResize, adminPanzoom, participantPanzoom} from './animation/setup';
-import {Particle, createSparks, celebrate} from './animation/effects';
+// src/client/lib/animation.ts
 
-let prizeFadeAnimationId;
+import { startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator, setAnimatorState } from './animation/core';
+import { drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes, wrapText, showAllTracersInstantly } from './animation/drawing';
+import { calculatePath, getVirtualWidth, getTargetHeight, calculatePrizeAreaHeight, getNameAreaHeight, calculateClientSideResults } from './animation/path';
+import { prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, handleResize, adminPanzoom, participantPanzoom } from './animation/setup';
+import { Particle, createSparks, celebrate } from './animation/effects';
+import { Prize } from './animation/types';
+
+let prizeFadeAnimationId: any;
 let currentPrizeAlpha = 0;
 
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-// ★★★ ここからが修正点 ★★★
-// ★★★★★★★★★★★★★★★★★★★★★★★★★★★
-function drawPrizesOnly(targetCtx, hidePrizes) {
+// ▼▼▼ ここからが修正点 ▼▼▼
+function drawPrizesOnly(targetCtx: CanvasRenderingContext2D, hidePrizes: boolean) {
   if (!targetCtx || !targetCtx.canvas || !animator.lotteryData) return;
 
-  const {participants, prizes} = animator.lotteryData;
+  const { participants, prizes } = animator.lotteryData;
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
   const numParticipants = participants.length;
@@ -30,8 +30,8 @@ function drawPrizesOnly(targetCtx, hidePrizes) {
   targetCtx.clearRect(0, lineBottomY, VIRTUAL_WIDTH, prizeAreaHeight);
 
   // Redraw prizes
-  prizes.forEach((prize, i) => {
-    const isRevealed = animator.revealedPrizes.some((r) => r.prizeIndex === i);
+  prizes.forEach((prize: Prize, i: number) => {
+    const isRevealed = animator.revealedPrizes.some((r: any) => r.prizeIndex === i);
     if (!isRevealed) {
       const x = participantSpacing * (i + 1);
       const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
@@ -58,13 +58,14 @@ function drawPrizesOnly(targetCtx, hidePrizes) {
   // Redraw any revealed prizes that might be in this area
   drawRevealedPrizes(targetCtx);
 }
+// ▲▲▲ ここまでが修正点 ▲▲▲
 
-export function fadePrizes(targetCtx, show) {
+export function fadePrizes(targetCtx: CanvasRenderingContext2D, show: boolean) {
   if (!targetCtx || !targetCtx.canvas) return;
   cancelAnimationFrame(prizeFadeAnimationId);
 
   const duration = 200;
-  let start = null;
+  let start: any = null;
   const startAlpha = currentPrizeAlpha;
   const endAlpha = show ? 1 : 0;
 
@@ -73,7 +74,7 @@ export function fadePrizes(targetCtx, show) {
     return;
   }
 
-  function step(timestamp) {
+  function step(timestamp: number) {
     if (!start) start = timestamp;
     const progress = timestamp - start;
     const ratio = Math.min(progress / duration, 1);
@@ -99,6 +100,4 @@ export function fadePrizes(targetCtx, show) {
   prizeFadeAnimationId = requestAnimationFrame(step);
 }
 
-export {startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, prepareStepAnimation, showAllTracersInstantly, adminPanzoom, participantPanzoom, setAnimatorState};
-
-
+export { startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, prepareStepAnimation, showAllTracersInstantly, adminPanzoom, participantPanzoom, setAnimatorState };

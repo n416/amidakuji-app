@@ -45,8 +45,7 @@ const App: React.FC = () => {
         signInAnonymously(firebaseAuth).catch(console.error);
 
         const emojiRes = await fetch('/api/emoji-map');
-        // @ts-ignore
-        window.emojiMapData = await emojiRes.json();
+        (window as any).emojiMapData = await emojiRes.json();
 
         setIsFirebaseReady(true);
       } catch (e) {

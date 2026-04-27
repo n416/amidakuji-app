@@ -1,10 +1,19 @@
-// @ts-nocheck
 // パーティクルや紙吹雪などの視覚効果に関するロジック
 import confetti from 'canvas-confetti';
-import {animator} from './core';
+import { animator } from './core';
 
 export class Particle {
-  constructor(x, y, color, type = 'trail') {
+  x: number;
+  y: number;
+  color: string;
+  type: string;
+  size: number;
+  alpha: number;
+  vx: number;
+  vy: number;
+  life: number;
+
+  constructor(x: number, y: number, color: string, type: string = 'trail') {
     this.x = x;
     this.y = y;
     this.color = color;
@@ -31,7 +40,7 @@ export class Particle {
       this.alpha = this.life / 20;
     }
   }
-  draw(ctx) {
+  draw(ctx: CanvasRenderingContext2D) {
     ctx.globalAlpha = this.alpha;
     ctx.fillStyle = this.color;
     ctx.beginPath();
@@ -41,15 +50,14 @@ export class Particle {
   }
 }
 
-export function createSparks(x, y, color) {
+export function createSparks(x: number, y: number, color: string) {
   for (let i = 0; i < 20; i++) {
     animator.particles.push(new Particle(x, y, color, 'spark'));
   }
 }
 
-export function celebrate(originX, color) {
-  // ▼▼▼ ここから修正 ▼▼▼
-  const container = animator.context.canvas.closest('.canvas-panzoom-container');
+export function celebrate(originX: number, color: string) {
+  const container = animator.context?.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
 
   const panzoom = animator.panzoom;
@@ -65,8 +73,5 @@ export function celebrate(originX, color) {
   // 画面上の座標をビューポートの割合(0~1)に正規化
   const x = screenX / window.innerWidth;
 
-  confetti({particleCount: 100, spread: 70, origin: {x: x, y: 0.8}, colors: [color, '#ffffff']});
-  // ▲▲▲ ここまで修正 ▲▲▲
+  confetti({ particleCount: 100, spread: 70, origin: { x: x, y: 0.8 }, colors: [color, '#ffffff'] });
 }
-
-

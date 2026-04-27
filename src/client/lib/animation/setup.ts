@@ -1,14 +1,14 @@
-// @ts-nocheck
 import Panzoom from '@panzoom/panzoom';
 import {animator, isAnimationRunning, updateRevealedPrizes} from './core';
 import {calculateAllPaths, getTargetHeight, calculatePrizeAreaHeight} from './path';
 import {drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes} from './drawing';
+import {Participant, Prize, Tracer} from './types';
 
 export let adminPanzoom: any = null;
 export let participantPanzoom: any = null;
-let currentAdminPanzoomElement = null;
-let currentParticipantPanzoomElement = null;
-let resizeDebounceTimer;
+let currentAdminPanzoomElement: any = null;
+let currentParticipantPanzoomElement: any = null;
+let resizeDebounceTimer: any;
 
 export function resetParticipantPanzoom() {
   if (participantPanzoom) {
@@ -26,7 +26,7 @@ export function resetAdminPanzoom() {
   }
 }
 
-export function initializePanzoom(canvasElement) {
+export function initializePanzoom(canvasElement: any) {
   if (!canvasElement) return null;
 
   const panzoomElement = canvasElement.parentElement;
@@ -57,7 +57,7 @@ export function initializePanzoom(canvasElement) {
 
   const container = canvasElement.closest('.canvas-panzoom-container');
 
-  const wheelListener = (event) => {
+  const wheelListener = (event: any) => {
     if (!event.shiftKey) {
       panzoom.zoomWithWheel(event);
     }
@@ -82,43 +82,43 @@ export function initializePanzoom(canvasElement) {
   return panzoom;
 }
 
-export async function preloadIcons(participants) {
-  const newIcons = participants.filter((p) => p && p.name && !animator.icons[p.name]);
+export async function preloadIcons(participants: Participant[]) {
+  const newIcons = participants.filter((p: Participant) => p && p.name && !animator.icons[p.name!]);
   if (newIcons.length === 0) return;
-  const promises = newIcons.map((p) => {
-    return new Promise((resolve) => {
-      const iconUrl = p.iconUrl || `/api/avatar-proxy?name=${encodeURIComponent(p.name)}`;
+  const promises = newIcons.map((p: Participant) => {
+    return new Promise<void>((resolve) => {
+      const iconUrl = p.iconUrl || `/api/avatar-proxy?name=${encodeURIComponent(p.name!)}`;
       const img = new Image();
       img.onload = () => {
-        animator.icons[p.name] = img;
+        animator.icons[p.name!] = img;
         resolve();
       };
       img.onerror = () => {
-        animator.icons[p.name] = null;
+        animator.icons[p.name!] = null;
         resolve();
       };
-      img.src = iconUrl;
+      img.src = iconUrl!;
     });
   });
   await Promise.all(promises);
 }
 
-export async function preloadPrizeImages(prizes) {
+export async function preloadPrizeImages(prizes: Prize[]) {
   if (!prizes) return Promise.resolve();
-  const newImages = prizes.filter((p) => p && typeof p === 'object' && p.imageUrl && !animator.prizeImages[p.imageUrl]);
+  const newImages = prizes.filter((p: Prize) => p && typeof p === 'object' && p.imageUrl && !animator.prizeImages[p.imageUrl!]);
   if (newImages.length === 0) return;
-  const promises = newImages.map((p) => {
-    return new Promise((resolve) => {
+  const promises = newImages.map((p: Prize) => {
+    return new Promise<void>((resolve) => {
       const img = new Image();
       img.onload = () => {
-        animator.prizeImages[p.imageUrl] = img;
+        animator.prizeImages[p.imageUrl!] = img;
         resolve();
       };
       img.onerror = () => {
-        animator.prizeImages[p.imageUrl] = null;
+        animator.prizeImages[p.imageUrl!] = null;
         resolve();
       };
-      img.src = p.imageUrl;
+      img.src = p.imageUrl!;
     });
   });
   await Promise.all(promises);
@@ -132,9 +132,9 @@ export function handleResize() {
   }
 
   console.log('[Animation] Animation is NOT running, redrawing static canvas.');
-  const adminCanvas = document.getElementById('adminCanvas');
-  const participantCanvas = document.getElementById('participantCanvas');
-  const participantCanvasStatic = document.getElementById('participantCanvasStatic');
+  const adminCanvas: any = document.getElementById('adminCanvas');
+  const participantCanvas: any = document.getElementById('participantCanvas');
+  const participantCanvasStatic: any = document.getElementById('participantCanvasStatic');
 
   if (adminCanvas && adminCanvas.offsetParent !== null) {
     console.log('[Animation] Redrawing admin canvas for resize.');
@@ -155,7 +155,7 @@ window.addEventListener('resize', () => {
   resizeDebounceTimer = setTimeout(handleResize, 350);
 });
 
-export async function prepareStepAnimation(targetCtx: any, hidePrizes = false, showMask = true, isResize = false, storedState: any = null, keepRevealed = false, onlyTracerName: any = null) {
+export async function prepareStepAnimation(targetCtx: CanvasRenderingContext2D, hidePrizes = false, showMask = true, isResize = false, storedState: any = null, keepRevealed = false, onlyTracerName: any = null) {
   if (!targetCtx || !animator.lotteryData) {
     console.error('[Animation] Prepare failed: No context or lottery data.');
     return;
@@ -174,21 +174,21 @@ export async function prepareStepAnimation(targetCtx: any, hidePrizes = false, s
     animator.icons = {};
     animator.prizeImages = {};
   }
-  const allParticipantsWithNames = animator.lotteryData.participants.filter((p) => p.name);
-  await preloadPrizeImages(animator.lotteryData.prizes);
+  const allParticipantsWithNames = animator.lotteryData!.participants.filter((p: Participant) => p.name);
+  await preloadPrizeImages(animator.lotteryData!.prizes);
   await preloadIcons(allParticipantsWithNames);
   const VIRTUAL_HEIGHT = getTargetHeight(container);
 
   const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
 
-  const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
+  const allPaths = calculateAllPaths(animator.lotteryData!.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
-  animator.tracers = allParticipantsWithNames.map((p) => {
+  animator.tracers = allParticipantsWithNames.map((p: Participant) => {
     const path = allPaths[p.slot];
-    const isFinished = animator.revealedPrizes.some((r) => r.participantName === p.name);
+    const isFinished = animator.revealedPrizes.some((r: any) => r.participantName === p.name);
     const finalPoint = isFinished ? path[path.length - 1] : path[0];
     return {
-      name: p.name,
+      name: p.name!,
       slot: p.slot,
       color: p.color || '#333',
       path,
@@ -208,7 +208,7 @@ export async function prepareStepAnimation(targetCtx: any, hidePrizes = false, s
 
   // onlyTracerName が指定されている場合、その名前のトレーサーの軌跡のみ描画する
   // それ以外のトレーサーはアイコンのみ表示（「他の人の軌跡見る！」ボタン押下前の状態）
-  animator.tracers.forEach((tracer) => {
+  animator.tracers.forEach((tracer: Tracer) => {
     if (tracer.isFinished) {
       if (!onlyTracerName || tracer.name === onlyTracerName) {
         drawTracerPath(targetCtx, tracer);
@@ -228,7 +228,7 @@ export async function prepareStepAnimation(targetCtx: any, hidePrizes = false, s
   } else if (isResize) {
     setTimeout(() => {
       if (container && currentPanzoom) {
-        const panzoomElement = targetCtx.canvas.parentElement;
+        const panzoomElement = targetCtx.canvas.parentElement!;
         const canvasWidth = panzoomElement.offsetWidth;
         const containerWidth = container.clientWidth;
         const scale = Math.min(containerWidth / canvasWidth, 1);
@@ -246,5 +246,3 @@ export async function prepareStepAnimation(targetCtx: any, hidePrizes = false, s
     }, 50);
   }
 }
-
-

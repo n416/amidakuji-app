@@ -36,21 +36,21 @@ export function useAmidaAnimation(props: UseAmidaAnimationProps) {
 
   const prepareStep = useCallback((canvasRef: React.RefObject<HTMLCanvasElement | null>, hidePrizes = false, showMask = true, isResize = false, storedState: any = null, keepRevealed = false, onlyTracerName: any = null) => {
     if (canvasRef.current) {
-      return prepareStepAnimation(canvasRef.current.getContext('2d'), hidePrizes, showMask, isResize, storedState, keepRevealed, onlyTracerName);
+      return prepareStepAnimation(canvasRef.current.getContext('2d')!, hidePrizes, showMask, isResize, storedState, keepRevealed, onlyTracerName);
     }
     return Promise.resolve();
   }, []);
 
   const start = useCallback((canvasRef: React.RefObject<HTMLCanvasElement | null>, userNames: string[], onComplete?: () => void, panToName?: string) => {
     if (canvasRef.current) {
-      return startAnimation(canvasRef.current.getContext('2d'), userNames, onComplete, panToName);
+      return startAnimation(canvasRef.current.getContext('2d')!, userNames, onComplete, panToName);
     }
     return Promise.resolve();
   }, []);
 
   const fadePrizesEffect = useCallback((canvasRef: React.RefObject<HTMLCanvasElement | null>, show: boolean) => {
     if (canvasRef.current) {
-      fadePrizes(canvasRef.current.getContext('2d'), show);
+      fadePrizes(canvasRef.current.getContext('2d')!, show);
     }
   }, []);
 

@@ -1,11 +1,27 @@
-// @ts-nocheck
-// amidakuji-app/public/js/animation/core.js
+// amidakuji-app/src/client/lib/animation/core.ts
 import {calculateAllPaths, getTargetHeight, getVirtualWidth, calculateClientSideResults} from './path';
 import {drawLotteryBase, drawRevealedPrizes, drawTracerPath, drawTracerIcon} from './drawing';
 import {initializePanzoom, preloadIcons, preloadPrizeImages, adminPanzoom, participantPanzoom} from './setup';
 import {createSparks, celebrate, Particle} from './effects';
+import {Tracer, LotteryData} from './types';
 
-export const animator = {
+export interface AnimatorState {
+  tracers: Tracer[];
+  icons: Record<string, HTMLImageElement | null>;
+  prizeImages: Record<string, HTMLImageElement | null>;
+  particles: Particle[];
+  running: boolean;
+  onComplete: (() => void) | null;
+  context: CanvasRenderingContext2D | null;
+  lastContainerWidth: number;
+  lastContainerHeight: number;
+  lotteryData: LotteryData | null; 
+  revealedPrizes: any[];
+  setRevealedPrizesCallback: ((prizes: any[]) => void) | null;
+  participantId: string | null;
+}
+
+export const animator: AnimatorState & { readonly panzoom: any } = {
   tracers: [],
   icons: {},
   prizeImages: {},
@@ -25,27 +41,27 @@ export const animator = {
   participantId: null,
 };
 
-export function setAnimatorState(newState) {
+export function setAnimatorState(newState: any) {
   if (newState.lotteryData !== undefined) animator.lotteryData = newState.lotteryData;
   if (newState.revealedPrizes !== undefined) animator.revealedPrizes = newState.revealedPrizes;
   if (newState.setRevealedPrizesCallback !== undefined) animator.setRevealedPrizesCallback = newState.setRevealedPrizesCallback;
   if (newState.participantId !== undefined) animator.participantId = newState.participantId;
 }
 
-export function updateRevealedPrizes(newPrizes) {
+export function updateRevealedPrizes(newPrizes: any) {
   animator.revealedPrizes = newPrizes;
   if (animator.setRevealedPrizesCallback) animator.setRevealedPrizesCallback(newPrizes);
 }
 
-let animationFrameId;
+let animationFrameId: any;
 
-function ensureResultsFormat(data) {
+function ensureResultsFormat(data: any) {
   if (!data.results || Object.keys(data.results).length === 0) {
     console.log('[Animation] No results found, calculating on client-side.');
     return calculateClientSideResults(data.participants, data.lines, data.prizes, data.doodles);
   }
 
-  const firstResult = Object.values(data.results)[0];
+  const firstResult: any = Object.values(data.results)[0];
   if (typeof firstResult.prizeIndex !== 'undefined') {
     console.log('[Animation] Results format is up-to-date.');
     return data.results;
@@ -78,17 +94,18 @@ export function clearAnimationState() {
   animator.lastContainerHeight = 0;
 }
 
-function updateTracerPosition(tracer, speed) {
+function updateTracerPosition(tracer: Tracer, speed: number) {
+  const lotteryData = animator.lotteryData!;
   const revealPrize = () => {
-    const targetCanvasId = animator.context.canvas.id;
+    const targetCanvasId = animator.context!.canvas.id;
 
     if (targetCanvasId === 'adminCanvas') {
-      const resultExists = animator.revealedPrizes.some((r) => r.participantName === tracer.name);
+      const resultExists = animator.revealedPrizes.some((r: any) => r.participantName === tracer.name);
       if (!resultExists) {
-        const result = animator.lotteryData.results[tracer.name];
+        const result = lotteryData.results?.[tracer.name];
         if (result) {
           const prizeIndex = result.prizeIndex;
-          const realPrize = animator.lotteryData.prizes[prizeIndex];
+          const realPrize = lotteryData.prizes[prizeIndex];
           if (typeof prizeIndex !== 'undefined' && prizeIndex > -1 && realPrize) {
             updateRevealedPrizes([...animator.revealedPrizes, {participantName: tracer.name, prize: realPrize, prizeIndex, revealProgress: 0}]);
           }
@@ -96,11 +113,11 @@ function updateTracerPosition(tracer, speed) {
       }
     } else if (targetCanvasId === 'participantCanvas') {
       if (animator.revealedPrizes.length === 0) {
-        const allPrizes = animator.lotteryData.prizes;
-        const allResults = animator.lotteryData.results;
+        const allPrizes = lotteryData.prizes;
+        const allResults = lotteryData.results || {};
 
-        const newRevealedPrizes = allPrizes.map((prize, index) => {
-          const winnerEntry = Object.entries(allResults).find(([name, result]) => result.prizeIndex === index);
+        const newRevealedPrizes = allPrizes.map((prize: any, index: number) => {
+          const winnerEntry = Object.entries(allResults).find(([name, result]: any) => result.prizeIndex === index);
           const winnerName = winnerEntry ? winnerEntry[0] : null;
 
           return {
@@ -118,18 +135,17 @@ function updateTracerPosition(tracer, speed) {
     }
   };
 
-  // ▼▼▼ この if ブロック全体を修正します ▼▼▼
+  // 指定された停止位置 (stopY) に到達した場合の処理
   if (tracer.stopY && tracer.y >= tracer.stopY) {
-    // 中間停止点に到達した場合
-    tracer.y = tracer.stopY; // 座標を正確に合わせる
-    tracer.isFinished = true; // ★重要: これでアニメーションのステップが停止します
+    tracer.y = tracer.stopY; 
+    tracer.isFinished = true; 
     const finalY = tracer.path[tracer.path.length - 1].y;
+    // 最終ゴール地点に到達した場合
     if (tracer.stopY >= finalY) {
-      // 停止点が最終ゴールだった場合のみ、お祝いエフェクトを出す
       if (!tracer.celebrated) {
         tracer.x = tracer.path[tracer.path.length - 1].x;
         tracer.y = tracer.path[tracer.path.length - 1].y;
-        const result = animator.lotteryData.results[tracer.name];
+        const result = lotteryData.results?.[tracer.name];
         if (result && result.prize.rank !== 'miss') {
           celebrate(tracer.x, tracer.color);
         }
@@ -141,15 +157,14 @@ function updateTracerPosition(tracer, speed) {
     delete tracer.stopY;
     return;
   }
-  // ▲▲▲ ここまで修正 ▲▲▲
 
   const target = tracer.path[tracer.pathIndex + 1];
 
+  // 目標地点が見つからない場合は終了扱いとする
   if (!target) {
-    // ▼▼▼ isFinished が true になるのは、この「経路の終点」に到達した時のみ ▼▼▼
     tracer.isFinished = true;
     if (!tracer.celebrated) {
-      const result = animator.lotteryData.results[tracer.name];
+      const result = lotteryData.results?.[tracer.name];
       if (result && result.prize.rank !== 'miss') {
         celebrate(tracer.x, tracer.color);
       }
@@ -163,6 +178,7 @@ function updateTracerPosition(tracer, speed) {
   const dy = target.y - tracer.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
 
+  // ターゲット座標への移動処理（距離が速度未満なら到達判定）
   if (distance < speed) {
     tracer.x = target.x;
     tracer.y = target.y;
@@ -175,6 +191,7 @@ function updateTracerPosition(tracer, speed) {
     tracer.y += (dy / distance) * speed;
   }
 }
+
 function animationLoop() {
   if (!animator.running) {
     return;
@@ -191,11 +208,13 @@ function animationLoop() {
   }
   const currentContainerWidth = container.clientWidth;
   const currentContainerHeight = getTargetHeight(container);
+  
+  // コンテナのサイズが変更された場合はパスを再計算
   if (currentContainerWidth !== animator.lastContainerWidth || currentContainerHeight !== animator.lastContainerHeight) {
-    const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
-    const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, currentContainerWidth, currentContainerHeight, container);
+    const allLines = [...(animator.lotteryData!.lines || []), ...(animator.lotteryData!.doodles || [])];
+    const allPaths = calculateAllPaths(animator.lotteryData!.participants, allLines, currentContainerWidth, currentContainerHeight, container);
 
-    animator.tracers.forEach((tracer) => {
+    animator.tracers.forEach((tracer: any) => {
       const newPath = allPaths[tracer.slot];
       if (newPath) {
         tracer.path = newPath;
@@ -209,32 +228,30 @@ function animationLoop() {
     animator.lastContainerWidth = currentContainerWidth;
     animator.lastContainerHeight = currentContainerHeight;
   }
-  const numParticipants = animator.lotteryData.participants.length;
+  const numParticipants = animator.lotteryData!.participants.length;
   const baseSpeed = 4;
   const reductionFactor = Math.min(0.5, Math.floor(Math.max(0, numParticipants - 10) / 10) * 0.1);
   const dynamicSpeed = baseSpeed * (1 - reductionFactor);
   targetCtx.clearRect(0, 0, targetCtx.canvas.width, targetCtx.canvas.height);
   const isDarkMode = document.body.classList.contains('dark-mode');
   const baseLineColor = isDarkMode ? '#dcdcdc' : '#333';
-  const isParticipantView = animator.context.canvas.id === 'participantCanvas';
+  const isParticipantView = animator.context!.canvas.id === 'participantCanvas';
   const hidePrizes = isParticipantView ? animator.revealedPrizes.length === 0 : true;
-  drawLotteryBase(targetCtx, animator.lotteryData, baseLineColor, hidePrizes);
+  drawLotteryBase(targetCtx, animator.lotteryData!, baseLineColor, hidePrizes);
   drawRevealedPrizes(targetCtx);
-  animator.particles = animator.particles.filter((p) => p.life > 0);
-  animator.particles.forEach((p) => {
+  animator.particles = animator.particles.filter((p: any) => p.life > 0);
+  animator.particles.forEach((p: any) => {
     p.update();
     p.draw(targetCtx);
   });
   let allTracersFinished = true;
 
-  // ▼▼▼ ここからが今回の修正点です ▼▼▼
-
-  // 1. まず、すべてのトレーサーの位置を更新し、軌跡（パス）を描画します
-  animator.tracers.forEach((tracer) => {
+  // 1. 各トレーサーの現在地を更新し、軌跡を描画する
+  animator.tracers.forEach((tracer: any) => {
     if (tracer.isFinished) {
       drawTracerPath(targetCtx, tracer);
     } else {
-      allTracersFinished = false; // ★この行がアニメーション継続の鍵です
+      allTracersFinished = false; 
       updateTracerPosition(tracer, dynamicSpeed);
       drawTracerPath(targetCtx, tracer);
       if (Math.random() > 0.5) {
@@ -243,23 +260,21 @@ function animationLoop() {
     }
   });
 
-  // 2. 次に、すべてのトレーサーのアイコンを、描画済みの軌跡の上に描画します
-  animator.tracers.forEach((tracer) => {
+  // 2. すべてのトレーサーのアイコンを描画する
+  animator.tracers.forEach((tracer: any) => {
     drawTracerIcon(targetCtx, tracer);
   });
 
-  // ▲▲▲ ここまでが修正点です ▲▲▲
-
-  const isRevealingPrizes = animator.revealedPrizes.some((p) => p.revealProgress < 15);
+  const isRevealingPrizes = animator.revealedPrizes.some((p: any) => p.revealProgress < 15);
   const particlesRemaining = animator.particles.length > 0;
 
   if (allTracersFinished && !isRevealingPrizes && !particlesRemaining) {
     if (animator.running) {
       console.log('%c[DEBUG] Animation finished. Calling onComplete callback.', 'color: green; font-weight: bold;');
-      animator.running = false; // ループを停止
+      animator.running = false; 
       if (animator.onComplete) {
         animator.onComplete();
-        animator.onComplete = null; // 複数回呼ばれないようにクリア
+        animator.onComplete = null; 
       }
     }
     return;
@@ -268,7 +283,7 @@ function animationLoop() {
   animationFrameId = requestAnimationFrame(animationLoop);
 }
 
-export async function startAnimation(targetCtx: any, userNames: any = [], onComplete: any = null, panToName: any = null) {
+export async function startAnimation(targetCtx: CanvasRenderingContext2D, userNames: string[] = [], onComplete: (() => void) | null = null, panToName: string | null = null) {
   console.log('[Animation] startAnimation called with userNames:', userNames);
   if (!targetCtx || !animator.lotteryData) {
     console.error('[Animation] Start failed: No context or lottery data.');
@@ -286,7 +301,7 @@ export async function startAnimation(targetCtx: any, userNames: any = [], onComp
     return;
   }
   const namesToAnimate = userNames || [];
-  const participantsToAnimate = animator.lotteryData.participants.filter((p) => p && p.name && namesToAnimate.includes(p.name));
+  const participantsToAnimate = animator.lotteryData.participants.filter((p: any) => p && p.name && namesToAnimate.includes(p.name));
   console.log('[Animation] participantsToAnimate:', participantsToAnimate);
   await preloadPrizeImages(animator.lotteryData.prizes);
   await preloadIcons(participantsToAnimate);
@@ -294,17 +309,18 @@ export async function startAnimation(targetCtx: any, userNames: any = [], onComp
   if (!container) return;
   const VIRTUAL_HEIGHT = getTargetHeight(container);
   const numParticipants = animator.lotteryData.participants.length;
-  const finishedTracers = animator.tracers.filter((t) => t.isFinished);
-  const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
+  const allParticipantsWithNames = animator.lotteryData!.participants.filter((p: any) => p.name);
+  const allLines = [...(animator.lotteryData!.lines || []), ...(animator.lotteryData!.doodles || [])];
 
-  const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
+  const allPaths = calculateAllPaths(animator.lotteryData!.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
-  const newTracers = participantsToAnimate.map((p) => {
+  const newTracers = participantsToAnimate.map((p: any) => {
     const path = allPaths[p.slot];
     console.log('[Animation] Creating tracer for', p.name, 'with path:', path);
     return {name: p.name, slot: p.slot, color: p.color || '#333', path, pathIndex: 0, progress: 0, x: path[0].x, y: path[0].y, isFinished: false, celebrated: false};
   });
-  const uniqueFinishedTracers = finishedTracers.filter((t) => !namesToAnimate.includes(t.name));
+  const finishedTracers = animator.tracers.filter((t: any) => t.isFinished);
+  const uniqueFinishedTracers = finishedTracers.filter((t: any) => !namesToAnimate.includes(t.name));
   animator.tracers = [...uniqueFinishedTracers, ...newTracers];
   animator.particles = [];
   animator.context = targetCtx;
@@ -312,14 +328,14 @@ export async function startAnimation(targetCtx: any, userNames: any = [], onComp
   animator.lastContainerWidth = container.clientWidth;
   animator.lastContainerHeight = VIRTUAL_HEIGHT;
   setTimeout(() => {
-    const panzoomElement = targetCtx.canvas.parentElement;
+    const panzoomElement = targetCtx.canvas.parentElement!;
     const canvasWidth = panzoomElement.offsetWidth;
     const containerWidth = container.clientWidth;
     const scale = currentPanzoom.getScale();
     const currentPan = currentPanzoom.getPan();
     let finalX = currentPan.x;
     if (panToName) {
-      const participant = animator.lotteryData.participants.find((p) => p.name === panToName);
+      const participant = animator.lotteryData!.participants.find((p: any) => p.name === panToName);
       if (participant) {
         const VIRTUAL_WIDTH = getVirtualWidth(numParticipants, containerWidth);
         const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
@@ -343,14 +359,13 @@ export async function startAnimation(targetCtx: any, userNames: any = [], onComp
 export function advanceLineByLine(onComplete: any = null) {
   if (animator.tracers.length === 0 || animator.running) return;
 
-  // ▼▼▼ このリセット条件の判定を修正します ▼▼▼
-  // isFinished フラグではなく、実際の経路の終点にいるかで判断する
-  const allAtFinalDestination = animator.tracers.every((t) => t.pathIndex >= t.path.length - 1);
+  // 全員が最終地点（ゴール）にいるかどうかの判定
+  const allAtFinalDestination = animator.tracers.every((t: any) => t.pathIndex >= t.path.length - 1);
 
   if (allAtFinalDestination) {
-    // 全員がゴールにいる場合のみ、最初からリセットする
+    // 全員ゴール済みの場合は初期位置にリセットする
     updateRevealedPrizes([]);
-    animator.tracers.forEach((tracer) => {
+    animator.tracers.forEach((tracer: any) => {
       tracer.pathIndex = 0;
       tracer.x = tracer.path[0].x;
       tracer.y = tracer.path[0].y;
@@ -359,17 +374,16 @@ export function advanceLineByLine(onComplete: any = null) {
       delete tracer.stopY;
     });
   }
-  // ▲▲▲ ここまで修正 ▲▲▲
 
   animator.onComplete = onComplete;
   let animationShouldStart = false;
-  animator.tracers.forEach((tracer) => {
-    // まだゴールしていないトレーサーを動かす準備をする
+  animator.tracers.forEach((tracer: any) => {
+    // まだゴールしていない場合、次の横線まで進める
     if (tracer.pathIndex < tracer.path.length - 1) {
-      tracer.isFinished = false; // 動けるようにフラグをリセット
+      tracer.isFinished = false; 
       animationShouldStart = true;
       let nextYForThisTracer = Infinity;
-      // 現在地から見て、次にある横線のY座標を探す
+      // 現在のパスインデックスから次の水平移動（Y座標の変更）を探す
       for (let i = tracer.pathIndex + 1; i < tracer.path.length; i++) {
         if (tracer.path[i].y > tracer.y + 0.1) {
           nextYForThisTracer = tracer.path[i].y;
@@ -378,14 +392,14 @@ export function advanceLineByLine(onComplete: any = null) {
       }
 
       if (nextYForThisTracer !== Infinity) {
-        // 次の横線が見つかったら、そこを中間停止点に設定
+        // 次の横線を停止位置として設定
         tracer.stopY = nextYForThisTracer;
       } else {
-        // 見つからなければ、ゴールが次の停止点
+        // 次の横線がない場合は一番下のゴール地点を停止位置とする
         tracer.stopY = tracer.path[tracer.path.length - 1].y;
       }
     } else {
-      // 既にゴールしているトレーサーは何もしない
+      // 既にゴールしている場合は何もしない
       tracer.isFinished = true;
     }
   });
@@ -402,16 +416,16 @@ export async function resetAnimation(onComplete: any = null) {
   if (isAnimationRunning()) return;
   animator.onComplete = onComplete;
   updateRevealedPrizes([]);
-  const container = animator.context.canvas.closest('.canvas-panzoom-container');
+  const container = animator.context!.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
   const VIRTUAL_HEIGHT = getTargetHeight(container);
-  const allParticipantsWithNames = animator.lotteryData.participants.filter((p) => p.name);
+  const allParticipantsWithNames = animator.lotteryData!.participants.filter((p: any) => p.name);
   await preloadIcons(allParticipantsWithNames);
-  const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
+  const allLines = [...(animator.lotteryData!.lines || []), ...(animator.lotteryData!.doodles || [])];
 
-  const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
+  const allPaths = calculateAllPaths(animator.lotteryData!.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
 
-  animator.tracers = allParticipantsWithNames.map((p) => {
+  animator.tracers = allParticipantsWithNames.map((p: any) => {
     const path = allPaths[p.slot];
     return {
       name: p.name,
@@ -429,5 +443,3 @@ export async function resetAnimation(onComplete: any = null) {
   animator.running = true;
   animationLoop();
 }
-
-

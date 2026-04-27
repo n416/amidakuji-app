@@ -1,9 +1,11 @@
-﻿// @ts-nocheck
+
+
 import {animator, isAnimationRunning, stopAnimation, updateRevealedPrizes} from './core';
 import {calculateAllPaths, getTargetHeight, getVirtualWidth, getNameAreaHeight, calculatePrizeAreaHeight} from './path';
 import {preloadIcons} from './setup';
+import {Participant, Prize, Doodle, Line, Tracer, LotteryData} from './types';
 
-export function wrapText(context, text, x, y, lineLength, lineHeight) {
+export function wrapText(context: any, text: string, x: number, y: number, lineLength: number, lineHeight: number) {
   if (!text) return;
   let currentY = y;
   for (let i = 0; i < text.length; i += lineLength) {
@@ -13,7 +15,7 @@ export function wrapText(context, text, x, y, lineLength, lineHeight) {
   }
 }
 
-export function drawLotteryBase(targetCtx, data, lineColor = '#ccc', hidePrizes = false) {
+export function drawLotteryBase(targetCtx: CanvasRenderingContext2D, data: LotteryData, lineColor = '#ccc', hidePrizes = false) {
   if (!targetCtx || !targetCtx.canvas || !data || !data.participants || data.participants.length === 0) return;
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
@@ -49,7 +51,7 @@ export function drawLotteryBase(targetCtx, data, lineColor = '#ccc', hidePrizes 
   const lineBottomY = VIRTUAL_HEIGHT - prizeAreaHeight;
   const nameY = lineTopY / 2;
 
-  participants.forEach((p, i) => {
+  participants.forEach((p: Participant, i: number) => {
     const x = participantSpacing * (i + 1);
 
     const isAdminView = targetCtx.canvas.id === 'adminCanvas';
@@ -57,12 +59,12 @@ export function drawLotteryBase(targetCtx, data, lineColor = '#ccc', hidePrizes 
 
     targetCtx.fillStyle = p.name ? mainTextColor : subTextColor;
     targetCtx.fillText(displayName, x, nameY);
-    const isRevealed = animator.revealedPrizes.some((r) => r.prizeIndex === i);
+    const isRevealed = animator.revealedPrizes.some((r: any) => r.prizeIndex === i);
     if (prizes && prizes[i] && !isRevealed) {
       const prize = prizes[i];
       const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
       const prizeName = hidePrizes ? '？？？' : actualPrizeName || '';
-      const prizeImage = !hidePrizes && typeof prize === 'object' && (prize.imageUrl || prize.newImageFile) ? animator.prizeImages[prize.imageUrl] : null;
+      const prizeImage = !hidePrizes && typeof prize === 'object' && (prize.imageUrl || prize.newImageFile) ? animator.prizeImages[prize.imageUrl!] : null;
 
       const prizeImageHeight = 35;
       const prizeAreaTopMargin = 30;
@@ -98,16 +100,16 @@ export function drawLotteryBase(targetCtx, data, lineColor = '#ccc', hidePrizes 
   if (allLines.length > 0) {
     const amidaDrawableHeight = lineBottomY - lineTopY;
     const sourceLineRange = 330 - 70;
-    allLines.forEach((line) => {
+    allLines.forEach((line: Line | Doodle) => {
       if (sourceLineRange <= 0) return;
       const startX = participantSpacing * (line.fromIndex + 1);
       const endX = participantSpacing * (line.toIndex + 1);
       const lineY = lineTopY + ((line.y - 70) / sourceLineRange) * amidaDrawableHeight;
 
-      if (line.memberId) {
+      if ((line as Doodle).memberId) {
         // doodleの場合
-        const participant = participants.find((p) => p.memberId === line.memberId);
-        targetCtx.strokeStyle = participant ? participant.color : '#ff00ff';
+        const participant = participants.find((p: Participant) => p.memberId === (line as Doodle).memberId);
+        targetCtx.strokeStyle = participant?.color || '#ff00ff';
         targetCtx.lineWidth = 3;
       } else {
         // 通常の線
@@ -123,10 +125,9 @@ export function drawLotteryBase(targetCtx, data, lineColor = '#ccc', hidePrizes 
   }
 }
 
-function drawDoodleLine(targetCtx, doodle, color, isDashed = true) {
+function drawDoodleLine(targetCtx: CanvasRenderingContext2D, doodle: Doodle, color: string, isDashed = true) {
   if (!doodle || !animator.lotteryData) return;
-
-  const {participants} = animator.lotteryData;
+  const {participants}: any = animator.lotteryData!;
   const numParticipants = participants.length;
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
@@ -160,18 +161,18 @@ function drawDoodleLine(targetCtx, doodle, color, isDashed = true) {
   }
 }
 
-export function drawDoodlePreview(targetCtx, doodle) {
-  const myParticipant = animator.lotteryData.participants.find((p) => p.memberId === animator.participantId);
-  const color = myParticipant ? myParticipant.color : '#ff00ff';
+export function drawDoodlePreview(targetCtx: CanvasRenderingContext2D, doodle: Doodle) {
+  const myParticipant = animator.lotteryData!.participants.find((p: Participant) => p.memberId === animator.participantId);
+  const color = myParticipant?.color || '#ff00ff';
   drawDoodleLine(targetCtx, doodle, color, true);
 }
 
-export function drawDoodleHoverPreview(targetCtx, doodle) {
+export function drawDoodleHoverPreview(targetCtx: CanvasRenderingContext2D, doodle: Doodle) {
   const color = '#cccccc';
   drawDoodleLine(targetCtx, doodle, color, true);
 }
 
-export function drawTracerPath(targetCtx, tracer) {
+export function drawTracerPath(targetCtx: CanvasRenderingContext2D, tracer: Tracer) {
   targetCtx.strokeStyle = tracer.color;
   targetCtx.lineWidth = 4;
   targetCtx.lineCap = 'round';
@@ -188,7 +189,7 @@ export function drawTracerPath(targetCtx, tracer) {
   targetCtx.shadowBlur = 0;
 }
 
-export function drawTracerIcon(targetCtx, tracer) {
+export function drawTracerIcon(targetCtx: CanvasRenderingContext2D, tracer: Tracer) {
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
   const VIRTUAL_HEIGHT = getTargetHeight(container);
@@ -214,24 +215,22 @@ export function drawTracerIcon(targetCtx, tracer) {
   targetCtx.restore();
 }
 
-export function drawRevealedPrizes(targetCtx) {
+export function drawRevealedPrizes(targetCtx: CanvasRenderingContext2D) {
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
   const VIRTUAL_HEIGHT = getTargetHeight(container);
-  const numParticipants = animator.lotteryData.participants.length;
+  const numParticipants = animator.lotteryData!.participants.length;
   const VIRTUAL_WIDTH = getVirtualWidth(numParticipants, container.clientWidth);
   const participantSpacing = VIRTUAL_WIDTH / (numParticipants + 1);
   const isDarkMode = document.body.classList.contains('dark-mode');
   targetCtx.fillStyle = isDarkMode ? '#e0e0e0' : '#333';
-
   const prizeAreaHeight = calculatePrizeAreaHeight(animator.lotteryData?.prizes);
   const lineBottomY = VIRTUAL_HEIGHT - prizeAreaHeight;
-
-  animator.revealedPrizes.forEach((result) => {
+  animator.revealedPrizes.forEach((result: any) => {
     const prize = result.prize;
     const actualPrizeName = typeof prize === 'object' ? prize.name : prize;
     const prizeName = actualPrizeName || '';
-    const prizeImage = typeof prize === 'object' && prize.imageUrl ? animator.prizeImages[prize.imageUrl] : null;
+    const prizeImage = typeof prize === 'object' && prize.imageUrl ? animator.prizeImages[prize.imageUrl!] : null;
     const x = participantSpacing * (result.prizeIndex + 1);
 
     const prizeImageHeight = 35;
@@ -261,25 +260,22 @@ export function drawRevealedPrizes(targetCtx) {
 
 export async function showAllTracersInstantly() {
   if (isAnimationRunning()) stopAnimation();
-
   const targetCtx = animator.context;
   if (!targetCtx || !animator.lotteryData) return;
 
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
-
-  const allParticipantsWithNames = animator.lotteryData.participants.filter((p) => p.name);
+  const allParticipantsWithNames = animator.lotteryData.participants.filter((p: Participant) => p.name);
 
   await preloadIcons(allParticipantsWithNames);
 
   const VIRTUAL_HEIGHT = getTargetHeight(container);
   const numParticipants = animator.lotteryData.participants.length;
-
   const allResults = animator.lotteryData.results;
   const allPrizes = animator.lotteryData.prizes;
   if (allResults && allPrizes) {
     const allRevealedPrizes = Object.keys(allResults)
-      .map((participantName) => {
+      .map((participantName: string) => {
         const result = allResults[participantName];
         if (!result) return null;
         const prizeIndex = result.prizeIndex;
@@ -297,15 +293,14 @@ export async function showAllTracersInstantly() {
       .filter(Boolean);
     updateRevealedPrizes(allRevealedPrizes);
   }
-
   const allLines = [...(animator.lotteryData.lines || []), ...(animator.lotteryData.doodles || [])];
   const allPaths = calculateAllPaths(animator.lotteryData.participants, allLines, container.clientWidth, VIRTUAL_HEIGHT, container);
-
-  animator.tracers = allParticipantsWithNames.map((p) => {
-    const path = allPaths[p.name];
+  animator.tracers = allParticipantsWithNames.map((p: Participant) => {
+    const path = allPaths[p.slot];
     const finalPoint = path[path.length - 1];
     return {
-      name: p.name,
+      name: p.name!,
+      slot: p.slot,
       color: p.color || '#333',
       path,
       pathIndex: path.length - 1,
@@ -320,18 +315,17 @@ export async function showAllTracersInstantly() {
   const isDarkMode = document.body.classList.contains('dark-mode');
   const baseLineColor = isDarkMode ? '#dcdcdc' : '#333';
   const hidePrizes = animator.lotteryData.displayMode === 'private' && animator.lotteryData.status !== 'started';
-
   drawLotteryBase(targetCtx, animator.lotteryData, baseLineColor, hidePrizes);
 
   // ▼▼▼ ここからが今回の修正点です ▼▼▼
 
   // 1. まず、すべてのトレーサーの軌跡（パス）を描画します
-  animator.tracers.forEach((tracer) => {
+  animator.tracers.forEach((tracer: Tracer) => {
     drawTracerPath(targetCtx, tracer);
   });
 
   // 2. 次に、すべてのトレーサーのアイコンを描画します
-  animator.tracers.forEach((tracer) => {
+  animator.tracers.forEach((tracer: Tracer) => {
     drawTracerIcon(targetCtx, tracer);
   });
 
