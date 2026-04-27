@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // eventsコレクションへのアクセスルール
+    match /events/{eventId} {
+      // 個別ドキュメントの取得（リアルタイムリスナー含む）は許可。
+      // URLやドキュメントIDを正確に知っているクライアントのみが購読可能。
+      allow get: if true;
+      
+      // 一覧取得（総当たりでのドキュメント抜き取り）は完全に禁止。
+      allow list: if false;
+      
+      // クライアントからの直接書き込み・更新・削除は完全に禁止。
+      // 書き込み操作はすべてバックエンド（Service Account）経由でのみ実行させる。
+      allow write: if false;
+    }
+
+    // groups や users など、その他のすべてのコレクションへのクライアントアクセスを遮断
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
