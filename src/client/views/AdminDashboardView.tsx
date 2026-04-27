@@ -189,7 +189,7 @@ export const AdminDashboardView: React.FC = () => {
       
       <div className="controls">
         <h3>ユーザー一覧</h3>
-        <div className="search-controls">
+        <div className="input-group mb-15">
           <input 
             type="text" 
             placeholder="ユーザーIDで検索" 
@@ -197,7 +197,7 @@ export const AdminDashboardView: React.FC = () => {
             onChange={(e) => setGroupAdminSearch(e.target.value)}
             onKeyUp={(e) => e.key === 'Enter' && fetchGroupAdmins(null)}
           />
-          <button onClick={() => { setGroupAdminPage(0); setGroupAdminHistory([null]); fetchGroupAdmins(null); }}>検索</button>
+          <button className="primary-action" onClick={() => { setGroupAdminPage(0); setGroupAdminHistory([null]); fetchGroupAdmins(null); }}>検索</button>
         </div>
         <ul id="adminUserList" className="item-list">
           {groupAdmins.length === 0 ? (
@@ -221,7 +221,7 @@ export const AdminDashboardView: React.FC = () => {
       
       <div className="controls">
         <h3>システム管理者一覧</h3>
-        <div className="search-controls">
+        <div className="input-group mb-15">
           <input 
             type="text" 
             placeholder="ユーザーIDで検索" 
@@ -229,7 +229,7 @@ export const AdminDashboardView: React.FC = () => {
             onChange={(e) => setSystemAdminSearch(e.target.value)}
             onKeyUp={(e) => e.key === 'Enter' && fetchSystemAdmins(null)}
           />
-          <button onClick={() => { setSystemAdminPage(0); setSystemAdminHistory([null]); fetchSystemAdmins(null); }}>検索</button>
+          <button className="primary-action" onClick={() => { setSystemAdminPage(0); setSystemAdminHistory([null]); fetchSystemAdmins(null); }}>検索</button>
         </div>
         <ul id="systemAdminList" className="item-list">
           {systemAdmins.length === 0 ? (
