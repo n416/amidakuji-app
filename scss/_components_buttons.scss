@@ -191,6 +191,8 @@ button:disabled {
 .secondary-btn {
   width: 100%;
   max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 @media (max-width: 600px) {

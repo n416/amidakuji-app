@@ -741,7 +741,7 @@ export const ParticipantView: React.FC = () => {
                    const isAcknowledged = participation?.acknowledgedResult;
                    
                    return !isShare && !isAcknowledged ? (
-                     <button className="primary-action" onClick={async () => {
+                     <button className="primary-action w-100 max-w-300 mx-auto" onClick={async () => {
                         try {
                           await api.acknowledgeResult(actualEventId!, myMemberId!, participantSession.token!);
                           showToast('結果を受け取りました！');
