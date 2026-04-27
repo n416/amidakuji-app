@@ -1,5 +1,6 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 // パーティクルや紙吹雪などの視覚効果に関するロジック
+import confetti from 'canvas-confetti';
 import {animator} from './core';
 
 export class Particle {
