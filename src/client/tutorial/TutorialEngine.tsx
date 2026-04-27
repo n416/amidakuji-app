@@ -34,14 +34,11 @@ function escapeHtml(str: string | undefined): string {
 export const TutorialEngine: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const state = useSelector((state: RootState) => {
-    return {
-      currentGroupId: state.lottery.currentGroupId || state.admin.currentGroup?.id,
-      currentUser: state.auth.user,
-      currentEventId: state.lottery.currentEventId,
-      currentLotteryData: state.lottery.currentLotteryData,
-    };
-  });
+  const currentGroupId = useSelector((state: RootState) => state.lottery.currentGroupId || state.admin.currentGroup?.id);
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const currentEventId = useSelector((state: RootState) => state.lottery.currentEventId);
+  const currentLotteryData = useSelector((state: RootState) => state.lottery.currentLotteryData);
+  const state = { currentGroupId, currentUser, currentEventId, currentLotteryData };
 
   const [isVisible, setIsVisible] = useState(false);
   const [title, setTitle] = useState('');

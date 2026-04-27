@@ -130,24 +130,7 @@ export const ParticipantView: React.FC = () => {
               if (!doc.exists) return;
               const updatedData = doc.data();
               
-              setEventData((prev: any) => {
-                if (prev?.status === 'pending' && updatedData.status === 'started') {
-                  showToast('イベントが開始されました！結果発表です！');
-                  setPhase('result');
-                }
-                
-                if (updatedData.doodles && JSON.stringify(prev?.doodles) !== JSON.stringify(updatedData.doodles)) {
-                  dispatch(setCurrentLotteryData(updatedData));
-                  setAnimatorState({ lotteryData: updatedData });
-                  if (staticCanvasRef.current) {
-                    const ctx = staticCanvasRef.current.getContext('2d');
-                    const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
-                    prepareStep(staticCanvasRef, true, false, false, storedState);
-                  }
-                }
-                
-                return updatedData;
-              });
+              setEventData(updatedData);
             },
             (error: any) => {
               console.error("Firestore listener error:", error);
@@ -170,6 +153,29 @@ export const ParticipantView: React.FC = () => {
     };
     init();
   }, [actualEventId, customUrl]);
+
+  const prevEventDataRef = useRef<any>(null);
+  useEffect(() => {
+    if (!eventData) return;
+    const prev = prevEventDataRef.current;
+    
+    if (prev?.status === 'pending' && eventData.status === 'started') {
+      showToast('イベントが開始されました！結果発表です！');
+      setPhase('result');
+    }
+    
+    if (eventData.doodles && JSON.stringify(prev?.doodles) !== JSON.stringify(eventData.doodles)) {
+      dispatch(setCurrentLotteryData(eventData));
+      setAnimatorState({ lotteryData: eventData });
+      if (staticCanvasRef.current) {
+        // @ts-ignore
+        const storedState = participantPanzoom ? { pan: participantPanzoom.getPan(), scale: participantPanzoom.getScale() } : null;
+        prepareStep(staticCanvasRef, true, false, false, storedState);
+      }
+    }
+    
+    prevEventDataRef.current = eventData;
+  }, [eventData, dispatch, setAnimatorState, prepareStep]);
 
   useEffect(() => {
     const redrawStaticAmida = () => {
