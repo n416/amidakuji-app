@@ -102,7 +102,7 @@ const App: React.FC = () => {
     )}
 
     {confirmState?.isOpen && (
-      <div className="modal active">
+      <div className="modal active modal-confirm">
         <div className="modal-content text-center max-w-400">
           <h3>確認</h3>
           <p className="confirm-message">{confirmState.message}</p>

@@ -223,21 +223,6 @@ export const DashboardView: React.FC = () => {
         />
       )}
 
-      {confirmDialog && (
-        <div className="modal" style={{ display: 'block', zIndex: 10000 }}>
-          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
-            <p style={{ fontSize: '1.1em', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>{confirmDialog.message}</p>
-            <div className="modal-actions" style={{ justifyContent: 'center', gap: '15px' }}>
-              <button className="secondary-btn" onClick={() => setConfirmDialog(null)}>キャンセル</button>
-              <button className="primary-action danger" onClick={() => {
-                confirmDialog.onConfirm();
-                setConfirmDialog(null);
-              }}>OK</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {settingsGroup && (
         <GroupSettingsModal
           settingsGroup={settingsGroup}
@@ -246,9 +231,28 @@ export const DashboardView: React.FC = () => {
             setSettingsGroup(null);
             fetchData();
           }}
+          onDeleted={() => {
+            setSettingsGroup(null);
+            navigate('/admin/groups');
+          }}
           setToastMessage={setToastMessage}
           setConfirmDialog={setConfirmDialog}
         />
+      )}
+
+      {confirmDialog && (
+        <div className="modal active modal-confirm">
+          <div className="modal-content max-w-400 text-center">
+            <p className="confirm-message text-lg">{confirmDialog.message}</p>
+            <div className="modal-actions center gap-15">
+              <button className="secondary-btn" onClick={() => setConfirmDialog(null)}>キャンセル</button>
+              <button className="primary-action danger" onClick={() => {
+                confirmDialog.onConfirm();
+                setConfirmDialog(null);
+              }}>OK</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

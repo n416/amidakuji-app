@@ -6,6 +6,7 @@ interface GroupSettingsModalProps {
   settingsGroup: any;
   onClose: () => void;
   onSaved: () => void;
+  onDeleted?: () => void;
   setToastMessage: (msg: string) => void;
   setConfirmDialog: (dialog: { message: string, onConfirm: () => void } | null) => void;
 }
@@ -14,6 +15,7 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   settingsGroup,
   onClose,
   onSaved,
+  onDeleted,
   setToastMessage,
   setConfirmDialog
 }) => {
@@ -51,7 +53,24 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
     }
   };
 
-
+  const handleDeleteGroup = () => {
+    setConfirmDialog({
+      message: `グループ「${localSettingsGroup.name}」を削除しますか？\n関連するすべてのイベントも削除され、元に戻せません。`,
+      onConfirm: async () => {
+        try {
+          await api.deleteGroup(settingsGroup.id);
+          setToastMessage('グループを削除しました。');
+          if (onDeleted) {
+            onDeleted();
+          } else {
+            onSaved();
+          }
+        } catch (e: any) {
+          setToastMessage(e.message || 'グループの削除に失敗しました。');
+        }
+      }
+    });
+  };
 
   const handleDeletePassword = () => {
     setConfirmDialog({
@@ -116,11 +135,16 @@ export const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
           </div>
 
           <div className="modal-actions">
-            {localSettingsGroup.hasPassword && (
-              <button type="button" id="deletePasswordButton" className="delete-btn action-left" onClick={handleDeletePassword}>
-                合言葉削除
+            <div className="action-left flex-gap-8">
+              <button type="button" className="delete-btn" onClick={handleDeleteGroup}>
+                グループ削除
               </button>
-            )}
+              {localSettingsGroup.hasPassword && (
+                <button type="button" id="deletePasswordButton" className="secondary-btn" onClick={handleDeletePassword}>
+                  合言葉削除
+                </button>
+              )}
+            </div>
             <button type="submit" id="saveGroupSettingsButton" className="primary-action">設定保存</button>
           </div>
         </form>

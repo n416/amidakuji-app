@@ -240,11 +240,17 @@ body.light-mode .toast-notification {
 .text-lg { font-size: 1.1em; }
 
 .back-btn {
-  background: none;
+  background-color: transparent;
   border: none;
   color: var(--primary-color);
   display: inline-flex;
   padding: 0;
+
+  &:hover {
+    background-color: transparent;
+    color: var(--primary-hover-color);
+    text-decoration: underline;
+  }
 }
 
 .scrollable-list-wrapper {

@@ -16,6 +16,10 @@
   z-index: 10000;
 }
 
+.modal-confirm.active {
+  z-index: 10500 !important;
+}
+
 .modal-content {
   // ★★★ ここからが修正点 ★★★
   background-color: var(--white-color); // #fefefe から変数に変更

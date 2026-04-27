@@ -165,6 +165,10 @@ export const GroupDashboardView: React.FC = () => {
             setSettingsGroup(null);
             fetchGroupsData();
           }}
+          onDeleted={() => {
+            setSettingsGroup(null);
+            fetchGroupsData();
+          }}
           setToastMessage={setToastMessage}
           setConfirmDialog={setConfirmDialog}
         />
@@ -177,7 +181,7 @@ export const GroupDashboardView: React.FC = () => {
       )}
 
       {confirmDialog && (
-        <div className="modal active">
+        <div className="modal active modal-confirm">
           <div className="modal-content max-w-400 text-center">
             <p className="confirm-message text-lg">{confirmDialog.message}</p>
             <div className="modal-actions center gap-15">
