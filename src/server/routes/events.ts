@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { FirestoreClient } from '../utils/firestore-rest';
+import { FirestoreClient, createCustomToken } from '../utils/firestore-rest';
 import { requireAuth } from '../middleware/auth';
 import { generateLines, calculateResults } from '../utils/amidakuji';
 import { getNextAvailableColor } from '../utils/color';
@@ -228,6 +228,15 @@ events.get('/events/:eventId/public', async (c) => {
 
     if (publicData.displayMode === 'private' && publicData.status !== 'started') {
         publicData.results = [];
+    }
+
+    // クライアントでFirestoreに直接アクセスするためのCustomTokenを生成
+    try {
+        const uid = memberId ? `member_${memberId}` : `anon_${Date.now()}`;
+        const firebaseToken = await createCustomToken(c.env.FIREBASE_SERVICE_ACCOUNT, uid, { groupId: eventData.groupId });
+        publicData.firebaseToken = firebaseToken;
+    } catch (tokenErr) {
+        console.error('Failed to generate custom token:', tokenErr);
     }
 
     return c.json(publicData, 200);

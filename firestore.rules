@@ -5,8 +5,8 @@ service cloud.firestore {
     // eventsコレクションへのアクセスルール
     match /events/{eventId} {
       // 個別ドキュメントの取得（リアルタイムリスナー含む）は許可。
-      // URLやドキュメントIDを正確に知っているクライアントのみが購読可能。
-      allow get: if true;
+      // URLやドキュメントIDを正確に知っている、かつ、適切な認証情報（Custom Token）を持つクライアントのみが購読可能。
+      allow get: if request.auth != null && request.auth.token.groupId == resource.data.groupId;
       
       // 一覧取得（総当たりでのドキュメント抜き取り）は完全に禁止。
       allow list: if false;

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { FirestoreClient } from '../utils/firestore-rest';
+import { FirestoreClient, createCustomToken } from '../utils/firestore-rest';
 import { calculateResults } from '../utils/amidakuji';
 import { getCookie } from 'hono/cookie';
 
@@ -41,13 +41,6 @@ publicRouter.get('/share/:eventId/:participantName?', async (c) => {
     
     const groupDoc = await db.getDocument(`groups/${eventData.groupId}`);
     const groupData = (groupDoc && groupDoc.name) ? db.firestoreToJson(groupDoc) : {};
-
-    if (groupData.password) {
-      const hasAccess = await checkGroupAccess(c, db, eventData.groupId, groupData);
-      if (!hasAccess) {
-        return c.json({ error: 'Password required', requiresPassword: true, groupId: eventData.groupId, groupName: groupData.name }, 401);
-      }
-    }
 
     const safeEventName = eventData.eventName || '無題のイベント';
     const eventName = groupData.name ? `${groupData.name} - ${safeEventName}` : safeEventName;

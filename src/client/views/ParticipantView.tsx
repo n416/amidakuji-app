@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../lib/api';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { firestoreDb } from '../lib/firebaseSetup';
+import { signInWithCustomToken } from 'firebase/auth';
+import { firestoreDb, firebaseAuth } from '../lib/firebaseSetup';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setParticipantSession, clearParticipantSession } from '../store/participantSlice';
@@ -101,6 +102,14 @@ export const ParticipantView: React.FC = () => {
           setAnimatorState({ revealedPrizes: [] });
         }
 
+        if (data.firebaseToken) {
+          try {
+            await signInWithCustomToken(firebaseAuth, data.firebaseToken);
+          } catch (authErr) {
+            console.error("Firebase auth failed:", authErr);
+          }
+        }
+
         if (isShare) {
           if (data.status === 'started') {
             setPhase('result');
@@ -124,20 +133,6 @@ export const ParticipantView: React.FC = () => {
           setPhase('nameEntry');
         }
 
-        if (!isShare) {
-          const unsubscribe = onSnapshot(doc(firestoreDb, 'events', actualEventId!),
-            async (docSnap: any) => {
-              if (!docSnap.exists()) return;
-              const updatedData = docSnap.data();
-              
-              setEventData(updatedData);
-            },
-            (error: any) => {
-              console.error("Firestore listener error:", error);
-            }
-          );
-          return () => unsubscribe();
-        }
       } catch (err: any) {
         // グループ合言葉が必要な場合は合言葉入力フェーズに遷移
         if (err.requiresPassword && err.groupId) {
@@ -152,7 +147,42 @@ export const ParticipantView: React.FC = () => {
       }
     };
     init();
-  }, [actualEventId, customUrl]);
+  }, [actualEventId, customUrl, isShare, participantName, participantSession.memberId, participantSession.token]);
+
+  // Firestoreリスナーのセットアップ（認証状態に依存するため分離）
+  useEffect(() => {
+    if (isShare || !actualEventId || !eventData) return;
+    
+    let unsubscribeSnapshot: (() => void) | null = null;
+    const unsubscribeAuth = firebaseAuth.onAuthStateChanged((user) => {
+      if (user) {
+        if (!unsubscribeSnapshot) {
+          unsubscribeSnapshot = onSnapshot(doc(firestoreDb, 'events', actualEventId!),
+            (docSnap: any) => {
+              if (!docSnap.exists()) return;
+              const updatedData = docSnap.data();
+              setEventData(updatedData);
+            },
+            (error: any) => {
+              console.error("Firestore listener error:", error);
+            }
+          );
+        }
+      } else {
+        if (unsubscribeSnapshot) {
+          unsubscribeSnapshot();
+          unsubscribeSnapshot = null;
+        }
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+      }
+    };
+  }, [actualEventId, isShare, eventData ? true : false]);
 
   const prevEventDataRef = useRef<any>(null);
   useEffect(() => {
@@ -497,6 +527,14 @@ export const ParticipantView: React.FC = () => {
         setAnimatorState({ lotteryData: data, revealedPrizes: [] });
         dispatch(setCurrentGroupId(data.groupId));
 
+        if (data.firebaseToken) {
+          try {
+            await signInWithCustomToken(firebaseAuth, data.firebaseToken);
+          } catch (authErr) {
+            console.error("Firebase auth failed:", authErr);
+          }
+        }
+
         if (isShare) {
           setPhase(data.status === 'started' ? 'result' : 'staticAmida');
         } else if (participantSession.memberId && participantSession.token && participantSession.groupId === data.groupId) {
@@ -538,6 +576,14 @@ export const ParticipantView: React.FC = () => {
       const newData = await api.getPublicEventData(actualEventId!, res.memberId, res.token);
       setEventData(newData);
 
+      if (newData.firebaseToken) {
+        try {
+          await signInWithCustomToken(firebaseAuth, newData.firebaseToken);
+        } catch (authErr) {
+          console.error("Firebase auth failed:", authErr);
+        }
+      }
+
       if (res.status === 'event_full') {
         setLoginError('イベントが満員のため参加できませんでした。');
         setPhase('nameEntry');
@@ -570,6 +616,14 @@ export const ParticipantView: React.FC = () => {
       const newData = await api.getPublicEventData(actualEventId!, res2.memberId, res2.token);
       setEventData(newData);
 
+      if (newData.firebaseToken) {
+        try {
+          await signInWithCustomToken(firebaseAuth, newData.firebaseToken);
+        } catch (authErr) {
+          console.error("Firebase auth failed:", authErr);
+        }
+      }
+
       const updatedParticipation = newData.participants.find((p: any) => p.memberId === res2.memberId);
       setPhase(newData.status === 'started' ? 'result' : (updatedParticipation ? 'staticAmida' : 'join'));
       setShowMemberPasswordModal(false);
@@ -592,6 +646,14 @@ export const ParticipantView: React.FC = () => {
         // 最新のイベントデータを取得（参加後なのでlinesが含まれる）
         const newData = await api.getPublicEventData(actualEventId!, myMemberId, participantSession.token!);
         setEventData(newData);
+
+        if (newData.firebaseToken) {
+          try {
+            await signInWithCustomToken(firebaseAuth, newData.firebaseToken);
+          } catch (authErr) {
+            console.error("Firebase auth failed:", authErr);
+          }
+        }
 
         setPhase('staticAmida');
       } catch (err: any) {

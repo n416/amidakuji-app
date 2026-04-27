@@ -90,6 +90,41 @@ async function getAccessToken(serviceAccountJsonStr: string): Promise<string> {
     return data.access_token;
 }
 
+export async function createCustomToken(serviceAccountJsonStr: string, uid: string, claims: any = {}): Promise<string> {
+    const sa = JSON.parse(serviceAccountJsonStr);
+    const privateKey = await importPrivateKey(sa.private_key);
+    
+    const header = {
+        alg: "RS256",
+        typ: "JWT"
+    };
+    
+    const now = Math.floor(Date.now() / 1000);
+    const payload = {
+        iss: sa.client_email,
+        sub: sa.client_email,
+        aud: "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
+        iat: now,
+        exp: now + 3600, // 1 hour expiration
+        uid: uid,
+        ...claims
+    };
+    
+    const encodedHeader = base64urlEncode(JSON.stringify(header));
+    const encodedPayload = base64urlEncode(JSON.stringify(payload));
+    const unsignedToken = `${encodedHeader}.${encodedPayload}`;
+    
+    const encoder = new TextEncoder();
+    const signatureBuffer = await crypto.subtle.sign(
+        "RSASSA-PKCS1-v1_5",
+        privateKey,
+        encoder.encode(unsignedToken)
+    );
+    
+    const signature = base64urlEncode(signatureBuffer);
+    return `${unsignedToken}.${signature}`;
+}
+
 export class FirestoreClient {
     private serviceAccountJsonStr: string;
     private projectId: string;
