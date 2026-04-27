@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setCurrentGroupMembers } from '../store/adminSlice';
 import * as api from '../lib/api';
+import { ArrowLeft, Plus, X } from 'lucide-react';
 
 export const MemberManagementView: React.FC = () => {
   const { groupId } = useParams();
@@ -207,7 +208,7 @@ export const MemberManagementView: React.FC = () => {
     <div id="memberManagementView" className="view-container">
       <div className="event-header">
         <button onClick={() => navigate(`/admin/groups/${groupId}`)}>
-          <i data-lucide="arrow-left"></i> ダッシュボードに戻る
+          <ArrowLeft size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} /> ダッシュボードに戻る
         </button>
       </div>
       <h2>メンバー管理</h2>
@@ -221,7 +222,7 @@ export const MemberManagementView: React.FC = () => {
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
-          <button className="primary-action" onClick={() => { setAddMemberNameInput(''); setShowAddMemberModal(true); }}><i data-lucide="plus"></i> メンバー追加</button>
+          <button className="primary-action" onClick={() => { setAddMemberNameInput(''); setShowAddMemberModal(true); }}><Plus size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} /> メンバー追加</button>
           <button id="bulkRegisterButton" onClick={() => { setBulkInput(''); setBulkStep(1); setShowBulkModal(true); }}>一括登録</button>
           <button className="secondary-btn" onClick={handleCleanupEvents} style={{ display: 'none' }}>過去データ修正</button>
         </div>
@@ -252,7 +253,7 @@ export const MemberManagementView: React.FC = () => {
       {showEditModal && (
         <div className="modal" style={{ display: 'block' }}>
           <div className="modal-content">
-            <span className="close-button" onClick={() => setShowEditModal(false)}><i data-lucide="x"></i></span>
+            <span className="close-button" onClick={() => setShowEditModal(false)}><X size={20} /></span>
             <h3>メンバー編集</h3>
             <div className="input-group">
               <label>名前:</label>
@@ -277,7 +278,7 @@ export const MemberManagementView: React.FC = () => {
       {showBulkModal && (
         <div className="modal" style={{ display: 'block' }}>
           <div className="modal-content">
-            <span className="close-button" onClick={() => setShowBulkModal(false)}><i data-lucide="x"></i></span>
+            <span className="close-button" onClick={() => setShowBulkModal(false)}><X size={20} /></span>
             <h3>メンバーの一括登録</h3>
 
             {bulkStep === 1 ? (

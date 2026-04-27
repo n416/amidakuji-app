@@ -46,9 +46,7 @@ export const GroupDashboardView: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).lucide) {
-      (window as any).lucide.createIcons();
-    }
+    // CDN版のlucide初期化を削除しました
   }, [groups, settingsGroup]);
 
   const handleCreateGroup = async () => {
