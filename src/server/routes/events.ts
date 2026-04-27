@@ -2,9 +2,9 @@ import { Hono } from 'hono';
 import { FirestoreClient, createCustomToken } from '../utils/firestore-rest';
 import { requireAuth } from '../middleware/auth';
 import { generateLines, calculateResults } from '../utils/amidakuji';
+import { generateR2UploadUrl } from '../utils/storage-token';
 import { getNextAvailableColor } from '../utils/color';
 import { getCookie } from 'hono/cookie';
-import { sign } from 'hono/jwt';
 
 const events = new Hono<{ Bindings: any, Variables: any }>();
 
@@ -494,14 +494,7 @@ events.post('/events/:eventId/generate-upload-url', requireAuth, async (c) => {
 
     const fileName = `shared_images/${fileHash}.${fileExt}`;
     
-    const tokenPayload = {
-      fileName,
-      fileType,
-      exp: Math.floor(Date.now() / 1000) + 180 // 3 minutes expiration
-    };
-    
-    const uploadToken = await sign(tokenPayload, c.env.JWT_SECRET || 'fallback_secret', 'HS256');
-    const signedUrl = `/api/uploads?token=${uploadToken}`;
+    const signedUrl = await generateR2UploadUrl(c.env, fileName, fileType);
 
     return c.json({
         signedUrl: signedUrl,
