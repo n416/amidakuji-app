@@ -518,10 +518,14 @@ export const ParticipantView: React.FC = () => {
       setMyMemberId(res.memberId);
       setMyName(nameInput.trim());
       
+      // 最新のイベントデータを取得（参加後なのでlinesが含まれる）
+      const newData = await api.getPublicEventData(actualEventId!, res.memberId, res.token);
+      setEventData(newData);
+
       if (res.status === 'event_full') {
         setLoginError('イベントが満員のため参加できませんでした。');
         setPhase('nameEntry');
-      } else if (eventData.status === 'started') {
+      } else if (newData.status === 'started') {
         setPhase('result');
       } else {
         setPhase('staticAmida');
@@ -545,8 +549,13 @@ export const ParticipantView: React.FC = () => {
       dispatch(setParticipantSession({ token: res2.token, memberId: res2.memberId, name: pendingLoginName, groupId: eventData.groupId }));
       setMyMemberId(res2.memberId);
       setMyName(pendingLoginName);
-      const updatedParticipation = eventData.participants.find((p: any) => p.memberId === res2.memberId);
-      setPhase(eventData.status === 'started' ? 'result' : (updatedParticipation ? 'staticAmida' : 'join'));
+      
+      // 最新のイベントデータを取得（参加後なのでlinesが含まれる）
+      const newData = await api.getPublicEventData(actualEventId!, res2.memberId, res2.token);
+      setEventData(newData);
+
+      const updatedParticipation = newData.participants.find((p: any) => p.memberId === res2.memberId);
+      setPhase(newData.status === 'started' ? 'result' : (updatedParticipation ? 'staticAmida' : 'join'));
       setShowMemberPasswordModal(false);
       setMemberPasswordInput('');
     } catch (err2: any) {
@@ -563,6 +572,11 @@ export const ParticipantView: React.FC = () => {
       setLoading(true);
       try {
         await api.joinSlot(actualEventId!, myMemberId, participantSession.token!, selectedSlot);
+        
+        // 最新のイベントデータを取得（参加後なのでlinesが含まれる）
+        const newData = await api.getPublicEventData(actualEventId!, myMemberId, participantSession.token!);
+        setEventData(newData);
+
         setPhase('staticAmida');
       } catch (err: any) {
         showToast(err.error || '参加に失敗しました');
