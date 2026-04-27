@@ -29,6 +29,8 @@ const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [confirmState, setConfirmState] = useState<{isOpen: boolean, message: string, resolve: (v: boolean) => void} | null>(null);
 
+  const [backgroundAnimation, setBackgroundAnimation] = useState(true);
+
   const user = useSelector((state: any) => state.auth.user);
 
   const showToast = (msg: string, duration = 3000) => {
@@ -72,8 +74,8 @@ const App: React.FC = () => {
     <p>読み込み中...</p>
   </div>
   
-  <BackgroundGrid />
-  <SettingsPanel />
+  <BackgroundGrid animation={backgroundAnimation} />
+  <SettingsPanel animation={backgroundAnimation} setAnimation={setBackgroundAnimation} />
     <Header />
     <div id="content" className="container">
     <Routes>

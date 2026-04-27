@@ -62,7 +62,7 @@ export const BroadcastView: React.FC = () => {
     fetchData();
   }, [eventId]);
 
-  const { prepareStep, start, stop, reset, advanceLine, isRunning, fadePrizes } = useAmidaAnimation({
+  const { isPreparing, prepareStep, start, stop, reset, advanceLine, isRunning, fadePrizes } = useAmidaAnimation({
     lotteryData: eventData,
     onRevealedPrizesChange: (prizes) => setRevealedPrizes([...prizes])
   });
@@ -75,7 +75,27 @@ export const BroadcastView: React.FC = () => {
       const hide = (isStarted && noParticipants) ? false : true;
       prepareStep(canvasRef, hide);
     }
-  }, [loading, isFullscreen, eventData?.status, prepareStep]);
+
+    let resizeDebounceTimer: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeDebounceTimer);
+      resizeDebounceTimer = setTimeout(() => {
+        if (!isRunning() && canvasRef.current && canvasRef.current.offsetParent !== null) {
+          const isStarted = eventData?.status === 'started';
+          const allParticipants = eventData?.participants?.filter((p: any) => p.name) || [];
+          const noParticipants = allParticipants.length === 0;
+          const hidePrizes = (isStarted && noParticipants) ? false : true;
+          prepareStep(canvasRef, hidePrizes, false, true);
+        }
+      }, 350);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeDebounceTimer);
+    };
+  }, [loading, isFullscreen, eventData?.status, eventData?.participants, prepareStep, isRunning]);
 
   useEffect(() => {
     return () => {
@@ -156,7 +176,7 @@ export const BroadcastView: React.FC = () => {
               </button>
             </div>
           )}
-          <div className="loading-mask" id="admin-loading-mask">あみだくじを生成中...</div>
+          {isPreparing && <div className="loading-mask">あみだくじを生成中...</div>}
           <div className="panzoom-wrapper" id="admin-panzoom-wrapper">
             <canvas id="adminCanvas" ref={canvasRef} width="800" height="400"></canvas>
           </div>

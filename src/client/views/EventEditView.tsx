@@ -95,7 +95,23 @@ export const EventEditView: React.FC = () => {
         prepareStep(canvasRef, true, false, true);
       }
     }
-  }, [eventData, isNewEvent]);
+
+    let resizeDebounceTimer: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeDebounceTimer);
+      resizeDebounceTimer = setTimeout(() => {
+        if (!isNewEvent && eventData && canvasRef.current && canvasRef.current.offsetParent !== null) {
+          prepareStep(canvasRef, true, false, true);
+        }
+      }, 350);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeDebounceTimer);
+    };
+  }, [eventData, isNewEvent, prepareStep, dispatch]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -438,11 +454,11 @@ export const EventEditView: React.FC = () => {
             <ul className="prize-card-list">
               {prizes.map((p, i) => (
                 <li key={i} className="prize-card">
-                  <div className="prize-card-image" onClick={() => { if(!isStarted) document.getElementById(`prize-image-upload-${i}`)?.click(); }}>
+                  <label className="prize-card-image" style={{ cursor: isStarted ? 'default' : 'pointer', display: 'block' }}>
                     {p.imageUrl || p.newImageFile ? (
                       <img src={p.newImageFile ? URL.createObjectURL(p.newImageFile) : p.imageUrl} alt={p.name} />
                     ) : <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="placeholder" className="placeholder" />}
-                    <input type="file" id={`prize-image-upload-${i}`} className="hidden-element" accept="image/*" disabled={isStarted} onChange={e => {
+                    <input type="file" className="hidden-element" accept="image/*" disabled={isStarted} onChange={e => {
                       if (e.target.files && e.target.files[0]) {
                         setCropperModalUrl(URL.createObjectURL(e.target.files[0]));
                         setCropperCallback(() => (file: File | null) => {
@@ -451,7 +467,7 @@ export const EventEditView: React.FC = () => {
                         });
                       }
                     }} />
-                  </div>
+                  </label>
                   <div className="prize-card-info">
                     <input 
                       type="text" 

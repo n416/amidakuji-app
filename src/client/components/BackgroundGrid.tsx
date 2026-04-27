@@ -1,6 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 
-export const BackgroundGrid: React.FC = () => {
+interface BackgroundGridProps {
+  animation: boolean;
+}
+
+export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => {
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
   const animCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -178,7 +182,7 @@ export const BackgroundGrid: React.FC = () => {
   }, []);
 
   return (
-    <div id="canvas-container">
+    <div id="canvas-container" style={{ display: animation ? 'block' : 'none' }}>
       <canvas id="grid-canvas" ref={gridCanvasRef}></canvas>
       <canvas id="animation-canvas" ref={animCanvasRef}></canvas>
     </div>

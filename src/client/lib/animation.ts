@@ -3,7 +3,7 @@
 import { startAnimation, stopAnimation, isAnimationRunning, resetAnimation, advanceLineByLine, clearAnimationState, animator, setAnimatorState } from './animation/core';
 import { drawLotteryBase, drawTracerPath, drawTracerIcon, drawRevealedPrizes, wrapText, showAllTracersInstantly } from './animation/drawing';
 import { calculatePath, getVirtualWidth, getTargetHeight, calculatePrizeAreaHeight, getNameAreaHeight, calculateClientSideResults } from './animation/path';
-import { prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, handleResize, adminPanzoom, participantPanzoom } from './animation/setup';
+import { prepareStepAnimation, initializePanzoom, preloadIcons, preloadPrizeImages, adminPanzoom, participantPanzoom } from './animation/setup';
 import { Particle, createSparks, celebrate } from './animation/effects';
 import { Prize } from './animation/types';
 

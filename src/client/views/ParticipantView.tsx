@@ -69,12 +69,14 @@ export const ParticipantView: React.FC = () => {
   const staticCanvasRef = useRef<HTMLCanvasElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const resultCanvasRef = useRef<HTMLCanvasElement>(null);
+  const staticPanzoomWrapperRef = useRef<HTMLDivElement>(null);
+  const resultPanzoomWrapperRef = useRef<HTMLDivElement>(null);
   const hasAnimatedResult = useRef(false);
 
   const actualEventId = eventId;
   const isShare = !!participantName;
 
-  const { prepareStep, start, isRunning, clear, setAnimatorState } = useAmidaAnimation({ lotteryData: eventData });
+  const { isPreparing, prepareStep, start, isRunning, clear, setAnimatorState } = useAmidaAnimation({ lotteryData: eventData });
 
   useEffect(() => {
     const init = async () => {
@@ -188,7 +190,7 @@ export const ParticipantView: React.FC = () => {
                 disablePan: doodleTool !== 'pan',
                 disableZoom: doodleTool !== 'pan'
               });
-              const wrapper = document.getElementById('participant-panzoom-wrapper-static');
+              const wrapper = staticPanzoomWrapperRef.current;
               if (wrapper) wrapper.style.cursor = doodleTool === 'pan' ? 'grab' : 'crosshair';
             }
           });
@@ -218,7 +220,7 @@ export const ParticipantView: React.FC = () => {
               setIsAnimationFinished(true);
               if (participantPanzoom) {
                 participantPanzoom.setOptions({ disablePan: false, disableZoom: false });
-                const wrapper = document.getElementById('participant-panzoom-wrapper');
+                const wrapper = resultPanzoomWrapperRef.current;
                 if (wrapper) wrapper.style.cursor = 'grab';
               }
               if (targetName && eventData.results) {
@@ -278,7 +280,7 @@ export const ParticipantView: React.FC = () => {
             prepareStep(resultCanvasRef, false, true, true, storedState, true, onlyName).then(() => {
               if (participantPanzoom) {
                 participantPanzoom.setOptions({ disablePan: false, disableZoom: false });
-                const wrapper = document.getElementById('participant-panzoom-wrapper');
+                const wrapper = resultPanzoomWrapperRef.current;
                 if (wrapper) wrapper.style.cursor = 'grab';
               }
             });
@@ -301,10 +303,24 @@ export const ParticipantView: React.FC = () => {
 
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
+    let resizeDebounceTimer: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeDebounceTimer);
+      resizeDebounceTimer = setTimeout(() => {
+        if (isRunning()) return;
+        redrawStaticAmida();
+        redrawResultAmida();
+      }, 350);
+    };
+
+    window.addEventListener('resize', handleResize);
+
     return () => {
       observer.disconnect();
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeDebounceTimer);
     };
-  }, [phase, eventData, myMemberId, showAllTracers]); // showAllTracers の変更時も再描画
+  }, [phase, eventData, myMemberId, showAllTracers, isRunning]); // showAllTracers の変更時も再描画
 
   // Cleanup Panzoom only on component unmount
   useEffect(() => {
@@ -320,7 +336,7 @@ export const ParticipantView: React.FC = () => {
         disablePan: doodleTool !== 'pan',
         disableZoom: doodleTool !== 'pan'
       });
-      const wrapper = document.getElementById('participant-panzoom-wrapper-static');
+      const wrapper = staticPanzoomWrapperRef.current;
       if (wrapper) {
         wrapper.style.cursor = doodleTool === 'pan' ? 'grab' : 'crosshair';
       }
@@ -682,8 +698,8 @@ export const ParticipantView: React.FC = () => {
             <h3>参加登録済み</h3>
             <p>イベント開始までお待ちください。自分の参加枠とあみだくじの線を確認できます。</p>
             <div className="canvas-panzoom-container">
-              <div className="loading-mask hidden-element" id="participant-loading-mask-static">あみだくじを生成中...</div>
-              <div className="panzoom-wrapper relative" id="participant-panzoom-wrapper-static">
+              {isPreparing && <div className="loading-mask">あみだくじを生成中...</div>}
+              <div className="panzoom-wrapper relative" id="participant-panzoom-wrapper-static" ref={staticPanzoomWrapperRef}>
                 <canvas 
                   id="participantCanvasStatic" 
                   ref={staticCanvasRef}
@@ -738,7 +754,7 @@ export const ParticipantView: React.FC = () => {
           <div id="resultSection">
             <h3><PartyPopper size={24} /> 結果発表 <PartyPopper size={24} /></h3>
             <div className="canvas-panzoom-container">
-              <div className="panzoom-wrapper" id="participant-panzoom-wrapper">
+              <div className="panzoom-wrapper" id="participant-panzoom-wrapper" ref={resultPanzoomWrapperRef}>
                 <canvas id="participantCanvas" ref={resultCanvasRef}></canvas>
               </div>
             </div>

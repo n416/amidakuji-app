@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { 
   startAnimation, 
   stopAnimation, 
@@ -18,6 +18,7 @@ export interface UseAmidaAnimationProps {
 
 export function useAmidaAnimation(props: UseAmidaAnimationProps) {
   const { lotteryData, onRevealedPrizesChange } = props;
+  const [isPreparing, setIsPreparing] = useState(false);
 
   useEffect(() => {
     setAnimatorState({ 
@@ -34,11 +35,14 @@ export function useAmidaAnimation(props: UseAmidaAnimationProps) {
     };
   }, []);
 
-  const prepareStep = useCallback((canvasRef: React.RefObject<HTMLCanvasElement | null>, hidePrizes = false, showMask = true, isResize = false, storedState: any = null, keepRevealed = false, onlyTracerName: any = null) => {
+  const prepareStep = useCallback(async (canvasRef: React.RefObject<HTMLCanvasElement | null>, hidePrizes = false, showMask = true, isResize = false, storedState: any = null, keepRevealed = false, onlyTracerName: any = null) => {
+    if (showMask && !isResize) setIsPreparing(true);
     if (canvasRef.current) {
-      return prepareStepAnimation(canvasRef.current.getContext('2d')!, hidePrizes, showMask, isResize, storedState, keepRevealed, onlyTracerName);
+      await prepareStepAnimation(canvasRef.current.getContext('2d')!, hidePrizes, showMask, isResize, storedState, keepRevealed, onlyTracerName);
     }
-    return Promise.resolve();
+    if (showMask && !isResize) {
+      setTimeout(() => setIsPreparing(false), 50);
+    }
   }, []);
 
   const start = useCallback((canvasRef: React.RefObject<HTMLCanvasElement | null>, userNames: string[], onComplete?: () => void, panToName?: string) => {
@@ -55,6 +59,7 @@ export function useAmidaAnimation(props: UseAmidaAnimationProps) {
   }, []);
 
   return { 
+    isPreparing,
     prepareStep,
     start, 
     stop: stopAnimation, 

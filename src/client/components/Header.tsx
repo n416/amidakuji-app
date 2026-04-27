@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation, matchPath } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Home, HelpCircle, ChevronDown, User, LogOut, Trash2, Settings, Plus } from 'lucide-react';
@@ -7,6 +7,7 @@ import { ParticipantHeader } from './ParticipantHeader';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
+  const headerRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, isLoading } = useSelector((state: any) => state.auth);
   const [menuOpen, setMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -54,7 +55,7 @@ export const Header: React.FC = () => {
   }, [location.pathname, groups]);
 
   useEffect(() => {
-    const headerEl = document.getElementById('header-container');
+    const headerEl = headerRef.current;
     if (!headerEl) return;
 
     const updateHeight = () => {
@@ -129,7 +130,7 @@ export const Header: React.FC = () => {
   const currentGroupName = groups.find(g => g.id === activeGroupId)?.name || 'グループ切替';
 
   return (
-    <div id="header-container">
+    <div id="header-container" ref={headerRef}>
       {user?.isImpersonating && (
         <div className="impersonation-banner">
           <span>現在、成り代わり中です（元の管理者ID: {user.originalAdminId}）</span>

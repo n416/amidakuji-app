@@ -8,7 +8,7 @@ export let adminPanzoom: ReturnType<typeof import("@panzoom/panzoom").default> |
 export let participantPanzoom: ReturnType<typeof import("@panzoom/panzoom").default> | null = null;
 let currentAdminPanzoomElement: HTMLElement | null = null;
 let currentParticipantPanzoomElement: HTMLElement | null = null;
-let resizeDebounceTimer: number | NodeJS.Timeout;
+
 
 export function resetParticipantPanzoom() {
   if (participantPanzoom) {
@@ -125,36 +125,6 @@ export async function preloadPrizeImages(prizes: Prize[]) {
   await Promise.all(promises);
 }
 
-export function handleResize() {
-  console.log('[Animation] Resize event detected.');
-  if (isAnimationRunning()) {
-    console.log('[Animation] Animation is running, resize will be handled by animationLoop.');
-    return;
-  }
-
-  console.log('[Animation] Animation is NOT running, redrawing static canvas.');
-  const adminCanvas = document.getElementById('adminCanvas') as HTMLCanvasElement | null;
-  const participantCanvas = document.getElementById('participantCanvas') as HTMLCanvasElement | null;
-  const participantCanvasStatic = document.getElementById('participantCanvasStatic') as HTMLCanvasElement | null;
-
-  if (adminCanvas && adminCanvas.offsetParent !== null) {
-    console.log('[Animation] Redrawing admin canvas for resize.');
-    const hidePrizes = animator.lotteryData?.status !== 'started';
-    prepareStepAnimation(adminCanvas.getContext('2d')!, hidePrizes, false, true);
-  } else if (participantCanvas && participantCanvas.offsetParent !== null) {
-    console.log('[Animation] Redrawing participant canvas for resize.');
-    const hidePrizes = animator.lotteryData?.displayMode === 'private' && animator.lotteryData?.status !== 'started';
-    prepareStepAnimation(participantCanvas.getContext('2d')!, hidePrizes, false, true);
-  } else if (participantCanvasStatic && participantCanvasStatic.offsetParent !== null) {
-    console.log('[Animation] Redrawing static participant canvas for resize.');
-    prepareStepAnimation(participantCanvasStatic.getContext('2d')!, true, false, true);
-  }
-}
-
-window.addEventListener('resize', () => {
-  clearTimeout(resizeDebounceTimer);
-  resizeDebounceTimer = setTimeout(handleResize, 350);
-});
 
 export async function prepareStepAnimation(targetCtx: CanvasRenderingContext2D, hidePrizes = false, showMask = true, isResize = false, storedState: {pan: {x: number, y: number}, scale: number} | null = null, keepRevealed = false, onlyTracerName: string | null = null) {
   if (!targetCtx || !animator.lotteryData) {
@@ -163,10 +133,6 @@ export async function prepareStepAnimation(targetCtx: CanvasRenderingContext2D, 
   }
   const container = targetCtx.canvas.closest('.canvas-panzoom-container');
   if (!container) return;
-  const maskId = targetCtx.canvas.id === 'adminCanvas' ? 'admin-loading-mask' : targetCtx.canvas.id === 'participantCanvas' ? 'participant-loading-mask' : 'participant-loading-mask-static';
-  const mask = document.getElementById(maskId);
-
-  if (mask && showMask) mask.style.display = 'flex';
   if (!isResize) {
     if (!keepRevealed) {
       updateRevealedPrizes([]);
@@ -241,9 +207,4 @@ export async function prepareStepAnimation(targetCtx: CanvasRenderingContext2D, 
     }, 50);
   }
 
-  if (mask && showMask) {
-    setTimeout(() => {
-      mask.style.display = 'none';
-    }, 50);
-  }
 }

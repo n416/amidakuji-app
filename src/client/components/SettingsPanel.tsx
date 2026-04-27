@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Settings } from 'lucide-react';
 
-export const SettingsPanel: React.FC = () => {
+interface SettingsPanelProps {
+  animation: boolean;
+  setAnimation: (val: boolean) => void;
+}
+
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ animation, setAnimation }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [animation, setAnimation] = useState(true);
   const [theme, setTheme] = useState<'auto' | 'light' | 'dark'>('auto');
   const panelRef = useRef<HTMLDivElement>(null);
   const fabRef = useRef<HTMLDivElement>(null);
@@ -18,7 +22,7 @@ export const SettingsPanel: React.FC = () => {
         if (parsed.theme) setTheme(parsed.theme);
       } catch (e) {}
     }
-  }, []);
+  }, [setAnimation]);
 
   useEffect(() => {
     // Save settings to localStorage
@@ -35,12 +39,6 @@ export const SettingsPanel: React.FC = () => {
       } else {
         document.body.classList.add('light-mode');
       }
-    }
-
-    // Apply animation
-    const canvasContainer = document.getElementById('canvas-container');
-    if (canvasContainer) {
-      canvasContainer.style.display = animation ? 'block' : 'none';
     }
   }, [animation, theme]);
 
