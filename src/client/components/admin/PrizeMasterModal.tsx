@@ -4,6 +4,7 @@ import { RootState } from '../../store';
 import { setCurrentGroupPrizeMasters } from '../../store/adminSlice';
 import { X, ImagePlus, Star, Trash2 } from 'lucide-react';
 import * as api from '../../lib/api';
+import { ImageCropperModal } from '../ImageCropperModal';
 
 interface PrizeMasterModalProps {
   groupId: string;
@@ -28,8 +29,6 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
   const [prizeMasterError, setPrizeMasterError] = useState('');
   
   const [cropTargetImage, setCropTargetImage] = useState<string | null>(null);
-  const cropperImageRef = useRef<HTMLImageElement>(null);
-  const cropperInstanceRef = useRef<any>(null);
 
   const loadPrizeMasters = async () => {
     try {
@@ -42,28 +41,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
     loadPrizeMasters();
   }, [groupId]);
 
-  useEffect(() => {
-    if (cropTargetImage && cropperImageRef.current) {
-      if (cropperInstanceRef.current) {
-        cropperInstanceRef.current.destroy();
-      }
-      const Cropper = (window as any).Cropper;
-      if (Cropper) {
-        cropperInstanceRef.current = new Cropper(cropperImageRef.current, {
-          aspectRatio: 1,
-          viewMode: 1,
-          background: false,
-          autoCropArea: 1,
-        });
-      }
-    }
-    return () => {
-      if (cropperInstanceRef.current) {
-        cropperInstanceRef.current.destroy();
-        cropperInstanceRef.current = null;
-      }
-    };
-  }, [cropTargetImage]);
+
 
   const handleAddPrizeMaster = async () => {
     if (!newMasterName.trim() || !newMasterFile) {
@@ -203,27 +181,15 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
       </div>
 
       {cropTargetImage && (
-        <div className="modal" style={{ display: 'block', zIndex: 4000 }}>
-          <div className="modal-content large">
-            <h3>画像の切り抜き</h3>
-            <div className="cropper-container">
-              <img ref={cropperImageRef} src={cropTargetImage} alt="Cropper" style={{ maxWidth: '100%' }} />
-            </div>
-            <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setCropTargetImage(null)}>キャンセル</button>
-              <button className="primary-action" onClick={() => {
-                if (cropperInstanceRef.current) {
-                  cropperInstanceRef.current.getCroppedCanvas({ width: 300, height: 300, imageSmoothingQuality: 'high' }).toBlob((blob: Blob) => {
-                    const file = new File([blob], 'processed_image.png', { type: 'image/png' });
-                    setNewMasterFile(file);
-                    setNewMasterFilePreview(URL.createObjectURL(blob));
-                    setCropTargetImage(null);
-                  }, 'image/png');
-                }
-              }}>決定</button>
-            </div>
-          </div>
-        </div>
+        <ImageCropperModal
+          imageUrl={cropTargetImage}
+          onConfirm={(file) => {
+            setNewMasterFile(file);
+            setNewMasterFilePreview(URL.createObjectURL(file));
+            setCropTargetImage(null);
+          }}
+          onCancel={() => setCropTargetImage(null)}
+        />
       )}
     </>
   );

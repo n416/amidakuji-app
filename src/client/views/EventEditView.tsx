@@ -600,38 +600,44 @@ export const EventEditView: React.FC = () => {
           <div className="modal-content">
             <span className="close-button" onClick={closeAddPrizeModal}><X /></span>
             <h3>景品の追加</h3>
-            <div className="input-group">
-              <label>景品名:</label>
-              <input type="text" id="newPrizeNameInput" placeholder="景品名を入力" value={newPrizeName} onChange={e => setNewPrizeName(e.target.value)} />
-            </div>
-            <div className="input-group">
-              <label>画像:</label>
-              <input type="file" id="newPrizeImageInput" accept="image/*" onChange={(e) => {
-                if (e.target.files?.[0]) {
-                  setCropperModalUrl(URL.createObjectURL(e.target.files[0]));
-                  setCropperCallback(() => (file: File | null) => {
-                    if (file) {
-                      setNewPrizeFile(file);
-                      setNewPrizeImageUrl(URL.createObjectURL(file));
-                    }
-                    e.target.value = '';
-                  });
-                }
-              }} />
-            </div>
-            {renderStars(newPrizeRank, setNewPrizeRank, false)}
-            
-            <img id="newPrizeImagePreview" src={newPrizeImageUrl || ''} alt="Image Preview" style={{maxWidth: '100px', maxHeight: '100px', display: newPrizeImageUrl ? 'block' : 'none'}} />
-            
-            <div className="modal-actions">
-              <button id="callMasterButton" className="secondary-btn action-left" onClick={async () => {
-                try {
-                  const masters = await api.getPrizeMasters(groupId || eventData?.groupId);
-                  dispatch(setCurrentGroupPrizeMasters(masters));
-                  setShowPrizeMasterSelectModal(true);
-                } catch(e) { showToast('マスター取得に失敗'); }
-              }}>マスターから呼び出し</button>
-              <button id="addPrizeOkButton" className="primary-action" onClick={addPrize}>追加</button>
+            <div className="prize-master-form">
+              <div className="prize-master-image-dropzone">
+                <label htmlFor="newPrizeImageInput">
+                  <img id="newPrizeImagePreview" src={newPrizeImageUrl || undefined} alt="プレビュー" style={{display: newPrizeImageUrl ? 'block' : 'none'}} />
+                  <div id="addPrizePlaceholder" style={{display: newPrizeImageUrl ? 'none' : 'flex'}}>
+                    <ImagePlus size={32} />
+                    <span>クリックして画像を選択</span>
+                  </div>
+                </label>
+                <input type="file" id="newPrizeImageInput" accept="image/*" className="visually-hidden" onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setCropperModalUrl(URL.createObjectURL(e.target.files[0]));
+                    setCropperCallback(() => (file: File | null) => {
+                      if (file) {
+                        setNewPrizeFile(file);
+                        setNewPrizeImageUrl(URL.createObjectURL(file));
+                      }
+                      e.target.value = '';
+                    });
+                  }
+                }} />
+              </div>
+              <div className="prize-master-inputs">
+                <input type="text" id="newPrizeNameInput" placeholder="景品名を入力" value={newPrizeName} onChange={e => setNewPrizeName(e.target.value)} />
+                <div style={{ marginTop: '10px' }}>
+                  {renderStars(newPrizeRank, setNewPrizeRank, false)}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: '15px' }}>
+                  <button id="callMasterButton" className="secondary-btn" onClick={async () => {
+                    try {
+                      const masters = await api.getPrizeMasters(groupId || eventData?.groupId);
+                      dispatch(setCurrentGroupPrizeMasters(masters));
+                      setShowPrizeMasterSelectModal(true);
+                    } catch(e) { showToast('マスター取得に失敗'); }
+                  }} style={{ flex: 1, padding: '10px', fontSize: '0.9em' }}>マスターから呼出</button>
+                  <button id="addPrizeOkButton" className="primary-action" onClick={addPrize} style={{ flex: 1, padding: '10px' }}>追加</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

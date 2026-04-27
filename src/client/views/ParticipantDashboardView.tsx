@@ -6,6 +6,7 @@ import { RootState } from '../store';
 import { setCurrentGroupId } from '../store/lotterySlice';
 import { setParticipantSession, clearParticipantSession } from '../store/participantSlice';
 import { LogOut, Trash2, Edit3, Key, PartyPopper, Gift, AlertTriangle, ArrowLeft, ImagePlus, X, Lock } from 'lucide-react';
+import { ImageCropperModal } from '../components/ImageCropperModal';
 
 export const ParticipantDashboardView: React.FC = () => {
   const { groupId, customUrl } = useParams<{ groupId?: string; customUrl?: string }>();
@@ -38,9 +39,6 @@ export const ParticipantDashboardView: React.FC = () => {
   const [newIconFile, setNewIconFile] = useState<File | null>(null);
   const [newIconFilePreview, setNewIconFilePreview] = useState<string | null>(null);
   const [cropTargetImage, setCropTargetImage] = useState<string | null>(null);
-
-  const cropperImageRef = useRef<HTMLImageElement>(null);
-  const cropperInstanceRef = useRef<any>(null);
   
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPasswordInput, setNewPasswordInput] = useState('');
@@ -127,28 +125,7 @@ export const ParticipantDashboardView: React.FC = () => {
     fetchDashboardData();
   }, [identifier, isCustomUrl]);
 
-  useEffect(() => {
-    if (cropTargetImage && cropperImageRef.current) {
-      if (cropperInstanceRef.current) {
-        cropperInstanceRef.current.destroy();
-      }
-      const Cropper = (window as any).Cropper;
-      if (Cropper) {
-        cropperInstanceRef.current = new Cropper(cropperImageRef.current, {
-          aspectRatio: 1,
-          viewMode: 1,
-          background: false,
-          autoCropArea: 1,
-        });
-      }
-    }
-    return () => {
-      if (cropperInstanceRef.current) {
-        cropperInstanceRef.current.destroy();
-        cropperInstanceRef.current = null;
-      }
-    };
-  }, [cropTargetImage]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -576,27 +553,15 @@ export const ParticipantDashboardView: React.FC = () => {
       )}
 
       {cropTargetImage && (
-        <div className="modal" style={{ display: 'block', zIndex: 11000 }}>
-          <div className="modal-content large">
-            <h3>画像の切り抜き</h3>
-            <div className="cropper-container">
-              <img ref={cropperImageRef} src={cropTargetImage} alt="Cropper" style={{ maxWidth: '100%' }} />
-            </div>
-            <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setCropTargetImage(null)}>キャンセル</button>
-              <button className="primary-action" onClick={() => {
-                if (cropperInstanceRef.current) {
-                  cropperInstanceRef.current.getCroppedCanvas({ width: 300, height: 300, imageSmoothingQuality: 'high' }).toBlob((blob: Blob) => {
-                    const file = new File([blob], 'profile_image.png', { type: 'image/png' });
-                    setNewIconFile(file);
-                    setNewIconFilePreview(URL.createObjectURL(blob));
-                    setCropTargetImage(null);
-                  }, 'image/png');
-                }
-              }}>決定</button>
-            </div>
-          </div>
-        </div>
+        <ImageCropperModal
+          imageUrl={cropTargetImage}
+          onConfirm={(file) => {
+            setNewIconFile(file);
+            setNewIconFilePreview(URL.createObjectURL(file));
+            setCropTargetImage(null);
+          }}
+          onCancel={() => setCropTargetImage(null)}
+        />
       )}
     </div>
   );

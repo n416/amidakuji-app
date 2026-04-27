@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from 'react';
+import Cropper from 'cropperjs';
+import 'cropperjs/dist/cropper.css';
 
 interface ImageCropperModalProps {
   imageUrl: string;
@@ -11,24 +13,30 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({ imageUrl, 
   const cropperRef = useRef<any>(null);
 
   useEffect(() => {
-    if (imageRef.current) {
-      // @ts-ignore
-      if (window.Cropper) {
-        // @ts-ignore
-        cropperRef.current = new window.Cropper(imageRef.current, {
-          aspectRatio: 1,
-          viewMode: 1,
-          background: false,
-          autoCropArea: 1,
-        });
-      } else {
-        console.error('Cropper.js is not loaded from CDN.');
-      }
+    const img = imageRef.current;
+    if (!img) return;
+
+    const initCropper = () => {
+      if (cropperRef.current) cropperRef.current.destroy();
+      cropperRef.current = new Cropper(img, {
+        aspectRatio: 1,
+        viewMode: 1,
+        background: false,
+        autoCropArea: 1,
+      });
+    };
+
+    if (img.complete) {
+      initCropper();
+    } else {
+      img.addEventListener('load', initCropper);
     }
 
     return () => {
+      img.removeEventListener('load', initCropper);
       if (cropperRef.current) {
         cropperRef.current.destroy();
+        cropperRef.current = null;
       }
     };
   }, [imageUrl]);
@@ -51,8 +59,8 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({ imageUrl, 
       <div className="modal-content" style={{ maxWidth: '400px' }}>
         <span className="close-button" onClick={onCancel}>×</span>
         <h3>画像のトリミング</h3>
-        <div className="cropper-container" style={{ width: '100%', maxHeight: '60vh', overflow: 'hidden', marginBottom: '20px' }}>
-          <img ref={imageRef} src={imageUrl} alt="crop target" style={{ maxWidth: '100%' }} />
+        <div style={{ width: '100%', maxHeight: '60vh', overflow: 'hidden', marginBottom: '20px' }}>
+          <img ref={imageRef} src={imageUrl} alt="crop target" style={{ display: 'block', maxWidth: '100%' }} />
         </div>
         <div className="modal-actions" style={{ marginTop: '20px' }}>
           <button className="primary-action" onClick={handleConfirm}>確定</button>
