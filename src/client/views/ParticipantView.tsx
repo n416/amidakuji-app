@@ -27,7 +27,7 @@ export const ParticipantView: React.FC = () => {
   const [eventData, setEventData] = useState<any>(null);
   const [myMemberId, setMyMemberId] = useState<string>('');
   const [myName, setMyName] = useState<string>('');
-  const [nameInput, setNameInput] = useState<string>('');
+  const [nameInput, setNameInput] = useState<string>(participantSession.name || '');
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -856,7 +856,10 @@ export const ParticipantView: React.FC = () => {
               <X size={24} />
             </span>
             <h3 style={{textAlign: 'center'}}>本人確認</h3>
-            <p style={{textAlign: 'center'}}><strong>{pendingLoginName}</strong> さんの合言葉を入力してください。</p>
+            <p style={{textAlign: 'center', fontSize: '0.95em'}}>
+              このイベントには既にパスワード付きで <strong>{pendingLoginName}</strong> さんが登録されています。<br/><br/>
+              ご本人の場合は合言葉を入力してください。別人の場合は、別の名前で参加してください。
+            </p>
             <form onSubmit={handleMemberLoginSubmit} className="input-group">
               <input
                 type="password"

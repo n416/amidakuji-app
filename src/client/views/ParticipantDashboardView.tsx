@@ -25,7 +25,7 @@ export const ParticipantDashboardView: React.FC = () => {
   const [participantId, setParticipantId] = useState('');
 
   // Local UI state
-  const [nameInput, setNameInput] = useState('');
+  const [nameInput, setNameInput] = useState(participantSession.name || '');
   const [loginError, setLoginError] = useState('');
   const [showAcknowledged, setShowAcknowledged] = useState(() => {
     return localStorage.getItem('showAcknowledgedEvents') === 'true';
@@ -416,7 +416,10 @@ export const ParticipantDashboardView: React.FC = () => {
               <X size={24} />
             </span>
             <h3>本人確認</h3>
-            <p><strong>{pendingLoginName}</strong> さんの合言葉を入力してください。</p>
+            <p style={{fontSize: '0.95em'}}>
+              このグループには既にパスワード付きで <strong>{pendingLoginName}</strong> さんが登録されています。<br/><br/>
+              ご本人の場合は合言葉を入力してください。別人の場合は、別の名前で登録してください。
+            </p>
             <form onSubmit={handleMemberLoginSubmit} className="input-group">
               <input
                 type="password"
