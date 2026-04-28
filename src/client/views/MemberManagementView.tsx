@@ -207,8 +207,8 @@ export const MemberManagementView: React.FC = () => {
   return (
     <div id="memberManagementView" className="view-container">
       <div className="event-header">
-        <button onClick={() => navigate(`/admin/groups/${groupId}`)}>
-          <ArrowLeft size={16} className="icon-inline mr-5" /> ダッシュボードに戻る
+        <button className="back-btn" onClick={() => navigate(`/admin/groups/${groupId}`)}>
+          <ArrowLeft size={16} className="icon-inline mr-5" /> 運営ダッシュボードに戻る
         </button>
       </div>
       <h2>メンバー管理</h2>

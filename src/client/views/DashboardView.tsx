@@ -127,7 +127,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div id="dashboardView" className="view-container">
-      <h2 id="eventGroupName">{group?.name || 'グループダッシュボード'}</h2>
+      <h2 id="eventGroupName">{group?.name || '運営ダッシュボード'}</h2>
 
       {passwordRequests.length > 0 && (
         <div id="passwordResetNotification" className="notification-banner">

@@ -142,7 +142,7 @@ export const BroadcastView: React.FC = () => {
   return (
     <div id="broadcastView" className={`view-container ${isFullscreen ? 'fullscreen-active' : ''}`}>
       <div className="broadcast-header">
-        <button id="backToDashboardButton" onClick={() => navigate(`/admin/event/${eventId}/edit`)}>
+        <button id="backToDashboardButton" className="back-btn" onClick={() => navigate(`/admin/event/${eventId}/edit`)}>
           <ArrowLeft size={16} className="mr-5" /> <span>編集画面に戻る</span>
         </button>
         <div className="broadcast-header-controls">

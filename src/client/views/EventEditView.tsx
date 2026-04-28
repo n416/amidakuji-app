@@ -455,8 +455,8 @@ export const EventEditView: React.FC = () => {
   return (
     <div id="eventEditView" className="view-container">
       <div className="event-header">
-        <button onClick={() => navigate(`/admin/groups/${groupId || eventData?.groupId}`)}>
-          <ArrowLeft size={16} className="mr-5 align-text-bottom"/> グループダッシュボードに戻る
+        <button className="back-btn" onClick={() => navigate(`/admin/groups/${groupId || eventData?.groupId}`)}>
+          <ArrowLeft size={16} className="mr-5 align-text-bottom"/> 運営ダッシュボードに戻る
         </button>
       </div>
       <h3>{isNewEvent ? 'イベント新規作成' : 'イベント編集'}</h3>
