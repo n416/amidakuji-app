@@ -8,6 +8,10 @@ import membersRouter from './routes/members';
 import { authMiddleware } from './middleware/auth';
 import { cors } from 'hono/cors';
 import { FirestoreClient } from './utils/firestore-rest';
+import participantsRouter from './routes/participants';
+import publicRouter from './routes/public';
+import utilsRouter from './routes/utils';
+import storageRouter from './routes/storage';
 
 type Bindings = {
   FIREBASE_CONFIG: string;
@@ -38,9 +42,6 @@ app.use('*', cors({
   credentials: true,
 }));
 
-// すべてのルートで認証ミドルウェアを適用
-app.use('*', authMiddleware);
-
 // ヘルスチェック
 app.get('/_ah/warmup', (c) => {
   return c.text('OK');
@@ -50,11 +51,6 @@ app.get('/api/test', (c) => {
   const user = c.get('user');
   return c.json({ message: 'Hello from Hono!', user });
 });
-
-import participantsRouter from './routes/participants';
-import publicRouter from './routes/public';
-import utilsRouter from './routes/utils';
-import storageRouter from './routes/storage';
 
 // ルートのマウント
 app.route('/auth', authRouter);
