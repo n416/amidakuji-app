@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import * as api from '../lib/api';
 import { useDispatch, useSelector } from 'react-redux';
@@ -63,7 +63,39 @@ export const EventEditView: React.FC = () => {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
-  const { prepareStep } = useAmidaAnimation({ lotteryData: eventData });
+  const draftEventData = useMemo(() => {
+    if (!eventData && !isNewEvent) return null;
+    
+    const draftPrizes = prizes.map(p => ({
+      ...p,
+      imageUrl: p.previewUrl || p.imageUrl
+    }));
+
+    const draftParticipants = [...(eventData?.participants || [])];
+    while (draftParticipants.length < draftPrizes.length) {
+      draftParticipants.push({ name: null });
+    }
+    if (draftParticipants.length > draftPrizes.length) {
+      draftParticipants.length = draftPrizes.length;
+    }
+
+    const isCountChanged = eventData && draftPrizes.length !== eventData.prizes?.length;
+
+    return {
+      ...(eventData || {}),
+      lines: isCountChanged ? [] : (eventData?.lines || []),
+      doodles: isCountChanged ? [] : (eventData?.doodles || []),
+      eventName,
+      prizes: draftPrizes,
+      participants: draftParticipants,
+      participantCount: draftPrizes.length,
+      displayPrizeName,
+      displayPrizeCount,
+      allowDoodleMode
+    };
+  }, [eventData, eventName, prizes, displayPrizeName, displayPrizeCount, allowDoodleMode, isNewEvent]);
+
+  const { prepareStep } = useAmidaAnimation({ lotteryData: draftEventData });
 
   useEffect(() => {
     const init = async () => {
@@ -88,10 +120,10 @@ export const EventEditView: React.FC = () => {
   }, [eventId, isNewEvent]);
 
   useEffect(() => {
-    if (!isNewEvent && eventData && canvasRef.current) {
+    if (!isNewEvent && draftEventData && canvasRef.current) {
       const ctx = canvasRef.current.getContext('2d');
       if (ctx) {
-        dispatch(setCurrentLotteryData(eventData));
+        // We only prepareStep for Live Preview. Do not update Redux!
         prepareStep(canvasRef, true, false, true);
       }
     }
@@ -100,7 +132,7 @@ export const EventEditView: React.FC = () => {
     const handleResize = () => {
       clearTimeout(resizeDebounceTimer);
       resizeDebounceTimer = setTimeout(() => {
-        if (!isNewEvent && eventData && canvasRef.current && canvasRef.current.offsetParent !== null) {
+        if (!isNewEvent && draftEventData && canvasRef.current && canvasRef.current.offsetParent !== null) {
           prepareStep(canvasRef, true, false, true);
         }
       }, 350);
@@ -111,7 +143,7 @@ export const EventEditView: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       clearTimeout(resizeDebounceTimer);
     };
-  }, [eventData, isNewEvent, prepareStep, dispatch]);
+  }, [draftEventData, isNewEvent, prepareStep]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -239,7 +271,19 @@ export const EventEditView: React.FC = () => {
 
   const addPrize = () => {
     if (!newPrizeName.trim() && !newPrizeFile) return;
-    setPrizes([...prizes, { name: newPrizeName.trim() || '名称未設定', rank: newPrizeRank, newImageFile: newPrizeFile }]);
+    let previewUrl = null;
+    if (newPrizeFile) {
+      previewUrl = URL.createObjectURL(newPrizeFile);
+    } else if (newPrizeImageUrl) {
+      previewUrl = newPrizeImageUrl;
+    }
+
+    setPrizes([...prizes, { 
+      name: newPrizeName.trim() || '名称未設定', 
+      rank: newPrizeRank, 
+      newImageFile: newPrizeFile,
+      previewUrl: previewUrl
+    }]);
     setNewPrizeName('');
     setNewPrizeRank('uncommon');
     setNewPrizeFile(null);
@@ -589,20 +633,23 @@ export const EventEditView: React.FC = () => {
             <button id="createEventButton" className="primary-action" onClick={handleSave} disabled={saving}>この内容でイベントを作成</button>
           </div>
         ) : (
-          <div className="relative">
-            {isDirty && (
-              <div className="final-prep-overlay">
-                <button id="saveForPreviewButton" className="primary-action" onClick={handleSave} disabled={saving}>変更を保存して設定を確定する</button>
-              </div>
-            )}
-            
-            <div className={`transition-opacity ${isDirty ? 'opacity-30 pointer-events-none' : ''}`}>
-              <div className="settings-section">
-                <h4>5. 参加者管理</h4>
-                <p className="description text-muted mb-10 text-09em">現在割り当てられている参加者を確認・削除できます。</p>
-                <div className="input-group mb-10">
-                  <button id="showFillSlotsModalButton" onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
+          <div>
+            <div className="relative mt-20">
+              {isDirty && (
+                <div className="final-prep-overlay" style={{ zIndex: 10, borderRadius: '8px' }}>
+                  <button id="saveForPreviewButton" className="primary-action" onClick={handleSave} disabled={saving} style={{ padding: '16px 32px', fontSize: '18px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                    変更を保存して設定を確定する
+                  </button>
                 </div>
+              )}
+              
+              <div className={`transition-opacity ${isDirty ? 'opacity-30 pointer-events-none' : ''}`}>
+                <div className="settings-section">
+                  <h4>5. 参加者管理</h4>
+                  <p className="description text-muted mb-10 text-09em">現在割り当てられている参加者を確認・削除できます。</p>
+                  <div className="input-group mb-10">
+                    <button id="showFillSlotsModalButton" onClick={fetchUnjoinedMembers} disabled={isStarted}><Users size={16}/> 参加枠を埋める</button>
+                  </div>
                 
                 <div className="max-h-300 overflow-y-auto border-ccc" style={{ borderRadius: '8px' }}>
                   <table className="prize-list-table m-0" style={{ border: 'none' }}>
@@ -614,7 +661,7 @@ export const EventEditView: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {eventData?.participants?.map((p: any, i: number) => (
+                      {draftEventData?.participants?.map((p: any, i: number) => (
                         <tr key={i}>
                           <td className="text-center">{i + 1}</td>
                           <td>{p.name || <span className="text-muted">（空き枠）</span>}</td>
@@ -641,6 +688,7 @@ export const EventEditView: React.FC = () => {
                                 onClick={() => openAddParticipantModal(i)}
                                 className="primary-action"
                                 style={{ padding: '4px 8px', fontSize: '12px' }}
+                                disabled={isStarted}
                               >
                                 <Plus size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }}/>
                                 追加
@@ -658,21 +706,33 @@ export const EventEditView: React.FC = () => {
                 <h4>6. 最終準備と配信</h4>
                 <div className="final-prep-content-wrapper">
                   <p>あみだくじを生成・プレビューし、必要に応じて調整します。</p>
-                <div className="input-group flex-wrap-gap-10">
+                <div className="input-group flex-wrap-gap-10 items-center">
                   <button id="regenerateLinesButton" onClick={handleRegenerateLines} disabled={isStarted}><RefreshCw size={16}/> 線を再生成</button>
-                <button id="shufflePrizesBroadcastButton" onClick={async () => {
-                  const opt = await showCustomConfirm('景品をシャッフルしますか？', ['シャッフルする']);
-                  if (!opt) return;
-                  try {
-                    const shuffledPrizes = [...prizes].sort(() => Math.random() - 0.5);
-                    await api.shufflePrizes(currentEventId!, shuffledPrizes);
-                    const updated = await api.getEvent(currentEventId!);
-                    setEventData(updated);
-                    showToast('景品をシャッフルしました');
-                  } catch(e: any) { showToast(e.error || 'シャッフルに失敗しました'); }
-                }} disabled={isStarted}><Gift size={16}/> 景品シャッフル</button>
+                  <button id="shufflePrizesBroadcastButton" onClick={async () => {
+                    const opt = await showCustomConfirm('景品をシャッフルしますか？', ['シャッフルする']);
+                    if (!opt) return;
+                    try {
+                      const shuffledPrizes = [...prizes].sort(() => Math.random() - 0.5);
+                      await api.shufflePrizes(currentEventId!, shuffledPrizes);
+                      const updated = await api.getEvent(currentEventId!);
+                      setEventData(updated);
+                      showToast('景品をシャッフルしました');
+                    } catch(e: any) { showToast(e.error || 'シャッフルに失敗しました'); }
+                  }} disabled={isStarted}><Gift size={16}/> 景品シャッフル</button>
+                </div>
               </div>
-              
+            </div>
+
+
+          </div>
+        </div>
+        
+        {/* Live Preview is outside the dirty lock */}
+            <div className="settings-section mt-20">
+              <h4 className="flex justify-between items-center">
+                ライブプレビュー
+                {isDirty && <span className="badge badge-warning text-08em px-10 py-5">未保存の下書き状態</span>}
+              </h4>
               <div className="canvas-panzoom-container mt-15 border-ccc">
                 <div className="panzoom-wrapper w-100 h-400 overflow-hidden">
                   <canvas ref={canvasRef} className="w-100 h-100"></canvas>
@@ -680,12 +740,10 @@ export const EventEditView: React.FC = () => {
               </div>
             </div>
 
-              <div className="mt-20 text-center">
-                <Link id="goToBroadcastViewButton" to={`/admin/event/${currentEventId}/broadcast`} className="primary-action link-btn-inline">
-                  配信画面へ進む <ArrowRight size={16}/>
-                </Link>
-                </div>
-              </div>
+            <div className={`mt-20 text-center transition-opacity ${isDirty ? 'opacity-30 pointer-events-none' : ''}`}>
+              <Link id="goToBroadcastViewButton" to={`/admin/event/${currentEventId}/broadcast`} className="primary-action link-btn-inline">
+                配信画面へ進む <ArrowRight size={16}/>
+              </Link>
             </div>
           </div>
         )}
