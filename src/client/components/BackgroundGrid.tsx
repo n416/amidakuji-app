@@ -18,15 +18,29 @@ export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => 
     if (!gridCtx || !animationCtx) return;
 
     const SCROLL_SPEED = 0.25;
-    const CYCLE_COUNT = 5;
-    const GRID_SIZE = 50;
+    const CYCLE_COUNT = 2;
+    const GRID_SIZE = 75;
     const TURN_CHANCE = 0.3;
-    const CYCLE_SPEED = 8;
-    const LINE_WIDTH = 1;
-    const TAIL_LENGTH = 45;
+    const CYCLE_SPEED = 2;
+    const LINE_WIDTH = 0.5;
+    const TAIL_LENGTH = 80;
 
-    // Use light mode theme as default for now
-    const currentTheme = { background: '#f4f7f6', cycleColorRGB: '255, 140, 0', gridColor: '#ddd' };
+    const updateTheme = () => {
+      const isDark = document.body.classList.contains('dark-mode');
+      return {
+        background: isDark ? '#3d3d3dff' : '#f4f7f6',
+        cycleColorRGB: isDark ? '120, 180, 255' : '255, 140, 0', // Soft blue for dark, orange for light
+        gridColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' // Semi-transparent for better blending
+      };
+    };
+
+    let currentTheme = updateTheme();
+
+    const handleThemeChange = () => {
+      currentTheme = updateTheme();
+    };
+
+    window.addEventListener('themeChanged', handleThemeChange);
 
     let scrollX = 0;
     let scrollY = 0;
@@ -60,8 +74,7 @@ export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => 
 
     class LightCycle {
       speed = CYCLE_SPEED;
-      colorRGB = currentTheme.cycleColorRGB;
-      tail: {x: number, y: number}[] = [];
+      tail: { x: number, y: number }[] = [];
       x = 0; y = 0; targetX = 0; targetY = 0; dx = 0; dy = 0;
 
       constructor() {
@@ -117,7 +130,7 @@ export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => 
         if (this.dy > 0) this.y = Math.min(this.y, this.targetY);
         if (this.dy < 0) this.y = Math.max(this.y, this.targetY);
 
-        this.tail.unshift({x: this.x, y: this.y});
+        this.tail.unshift({ x: this.x, y: this.y });
         if (this.tail.length > TAIL_LENGTH) {
           this.tail.pop();
         }
@@ -140,7 +153,7 @@ export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => 
           animationCtx!.lineCap = 'round';
 
           // Pseudo-glow (thicker line, lower opacity)
-          animationCtx!.strokeStyle = `rgba(${this.colorRGB}, ${alpha * 0.3})`;
+          animationCtx!.strokeStyle = `rgba(${currentTheme.cycleColorRGB}, ${alpha * 0.3})`;
           animationCtx!.lineWidth = LINE_WIDTH * 4;
           animationCtx!.beginPath();
           animationCtx!.moveTo(p1.x + currentScrollX, p1.y + currentScrollY);
@@ -148,7 +161,7 @@ export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => 
           animationCtx!.stroke();
 
           // Core line
-          animationCtx!.strokeStyle = `rgba(${this.colorRGB}, ${alpha})`;
+          animationCtx!.strokeStyle = `rgba(${currentTheme.cycleColorRGB}, ${alpha})`;
           animationCtx!.lineWidth = LINE_WIDTH;
           animationCtx!.beginPath();
           animationCtx!.moveTo(p1.x + currentScrollX, p1.y + currentScrollY);
@@ -184,6 +197,7 @@ export const BackgroundGrid: React.FC<BackgroundGridProps> = ({ animation }) => 
 
     return () => {
       window.removeEventListener('resize', resizeCanvases);
+      window.removeEventListener('themeChanged', handleThemeChange);
       cancelAnimationFrame(animationId);
     };
   }, []);
