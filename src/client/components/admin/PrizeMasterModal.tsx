@@ -21,20 +21,20 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
 }) => {
   const dispatch = useDispatch();
   const prizeMasters = useSelector((state: RootState) => state.admin.currentGroupPrizeMasters);
-  
+
   const [newMasterName, setNewMasterName] = useState('');
   const [newMasterFile, setNewMasterFile] = useState<File | null>(null);
   const [newMasterFilePreview, setNewMasterFilePreview] = useState<string | null>(null);
   const [newMasterRank, setNewMasterRank] = useState('common');
   const [prizeMasterError, setPrizeMasterError] = useState('');
-  
+
   const [cropTargetImage, setCropTargetImage] = useState<string | null>(null);
 
   const loadPrizeMasters = async () => {
     try {
       const data = await api.getPrizeMasters(groupId);
       dispatch(setCurrentGroupPrizeMasters(data));
-    } catch (e) {}
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
 
   const handleAddPrizeMaster = async () => {
     if (!newMasterName.trim() || !newMasterFile) {
-      setPrizeMasterError('賞品名と画像を選択してください');
+      setPrizeMasterError('景品名と画像を選択してください');
       return;
     }
     setPrizeMasterError('');
@@ -57,13 +57,13 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
 
       const res = await api.generatePrizeMasterUploadUrl(groupId, newMasterFile.type, fileHash);
       const { signedUrl, imageUrl, requiredHeaders } = res;
-      
+
       const resUpload = await fetch(signedUrl, { method: 'PUT', headers: { ...requiredHeaders, 'Content-Type': newMasterFile.type }, body: newMasterFile });
       if (!resUpload.ok) throw new Error('Upload failed');
 
       await api.addPrizeMaster(groupId, newMasterName, imageUrl, newMasterRank);
 
-      setToastMessage('賞品マスターを追加しました。');
+      setToastMessage('景品マスターを追加しました。');
       setNewMasterName('');
       setNewMasterFile(null);
       setNewMasterFilePreview(null);
@@ -76,7 +76,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
 
   const handleDeletePrizeMaster = (masterId: string) => {
     setConfirmDialog({
-      message: 'この賞品マスターを削除しますか？',
+      message: 'この景品マスターを削除しますか？',
       onConfirm: async () => {
         try {
           await api.deletePrizeMaster(masterId, groupId);
@@ -94,9 +94,9 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
       <div className="modal active">
         <div className="modal-content">
           <span className="close-button" onClick={onClose}><X size={28} /></span>
-          <h3>賞品マスター管理</h3>
-          <p>よく使う賞品を登録しておくと、イベント作成時に簡単に呼び出せます。</p>
-          
+          <h3>景品マスター管理</h3>
+          <p>よく使う景品を登録しておくと、イベント作成時に簡単に呼び出せます。</p>
+
           <div className="prize-master-form">
             <div className="prize-master-image-dropzone">
               <label htmlFor="newMasterImageUpload">
@@ -106,10 +106,10 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
                   <span>クリックして画像を選択</span>
                 </div>
               </label>
-              <input 
-                type="file" 
-                id="newMasterImageUpload" 
-                accept="image/*" 
+              <input
+                type="file"
+                id="newMasterImageUpload"
+                accept="image/*"
                 className="visually-hidden"
                 onChange={e => {
                   const file = e.target.files?.[0];
@@ -128,15 +128,15 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
               />
             </div>
             <div className="prize-master-inputs">
-              <input type="text" id="addMasterPrizeNameInput" placeholder="新しい賞品名" value={newMasterName} onChange={e => setNewMasterName(e.target.value)} />
+              <input type="text" id="addMasterPrizeNameInput" placeholder="新しい景品名" value={newMasterName} onChange={e => setNewMasterName(e.target.value)} />
               <div className="prize-rank-selector" data-rank={newMasterRank}>
                 {['miss', 'uncommon', 'common', 'rare', 'epic'].map((rankValue, index) => {
                   const ranks = ['miss', 'uncommon', 'common', 'rare', 'epic'];
                   const currentIndex = ranks.indexOf(newMasterRank);
                   return (
-                    <Star 
+                    <Star
                       key={rankValue}
-                      className={`lucide-star ${index <= currentIndex ? 'filled' : ''}`} 
+                      className={`lucide-star ${index <= currentIndex ? 'filled' : ''}`}
                       onClick={() => setNewMasterRank(rankValue)}
                     />
                   );
@@ -157,7 +157,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
                 'epic': { stars: 5, label: 'エピック', color: '#f44336' }
               };
               const config = rankConfig[pm.rank] || rankConfig['common'];
-              
+
               return (
                 <li key={pm.id} className="item-list-item prize-master-item">
                   <img src={pm.imageUrl || 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'} alt={pm.name} className="prize-master-image" />
@@ -165,9 +165,9 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
                     <span className="prize-master-name">{pm.name}</span>
                     <div className="prize-master-rank" data-rank={pm.rank}>
                       {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          className={`lucide-star star-color-${pm.rank} ${i < config.stars ? 'filled' : ''}`} 
+                        <Star
+                          key={i}
+                          className={`lucide-star star-color-${pm.rank} ${i < config.stars ? 'filled' : ''}`}
                           size={16}
                         />
                       ))}
@@ -179,7 +179,7 @@ export const PrizeMasterModal: React.FC<PrizeMasterModalProps> = ({
                 </li>
               );
             })}
-            {prizeMasters.length === 0 && <li>登録されている賞品マスターはありません。</li>}
+            {prizeMasters.length === 0 && <li>登録されている景品マスターはありません。</li>}
           </ul>
         </div>
       </div>

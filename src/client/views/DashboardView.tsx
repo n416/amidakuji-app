@@ -14,7 +14,7 @@ export const DashboardView: React.FC = () => {
   const navigate = useNavigate();
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
-  
+
   const group = useSelector((state: RootState) => state.admin.currentGroup);
   const events = useSelector((state: RootState) => state.admin.currentGroupEvents);
   const passwordRequests = useSelector((state: RootState) => state.admin.passwordRequests);
@@ -29,7 +29,7 @@ export const DashboardView: React.FC = () => {
 
   // UI States
   const [toastMessage, setToastMessage] = useState('');
-  const [confirmDialog, setConfirmDialog] = useState<{message: string, onConfirm: () => void} | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ message: string, onConfirm: () => void } | null>(null);
 
   const fetchData = async () => {
     if (!groupId) return;
@@ -56,7 +56,7 @@ export const DashboardView: React.FC = () => {
     if (savedPreference === 'true') {
       setShowStartedEvents(true);
     }
-    
+
     fetchData();
 
     const handleUpdate = () => fetchData();
@@ -128,7 +128,7 @@ export const DashboardView: React.FC = () => {
   return (
     <div id="dashboardView" className="view-container">
       <h2 id="eventGroupName">{group?.name || 'グループダッシュボード'}</h2>
-      
+
       {passwordRequests.length > 0 && (
         <div id="passwordResetNotification" className="notification-banner">
           <p><span id="passwordResetCount">{passwordRequests.length}</span>件の合言葉リセット依頼が承認を待っています。</p>
@@ -136,22 +136,28 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
-      <div className="controls">
+      <div className="controls dashboard-actions-container">
         <div id="userInfoDisplay" className="user-info-display">
           {user && user.anonymousName ? `ようこそ ${user.anonymousName} さん (id: ${user.id.substring(0, 8)}...)` : ''}
         </div>
-        <button id="goToGroupSettingsButton" onClick={handleGroupSettings}><Settings size={18} /> グループ設定</button>
-        <button id="goToPrizeMasterButton" onClick={handlePrizeMaster}><Trophy size={18} /> 賞品マスター管理</button>
-        <button id="goToMemberManagementButton" onClick={handleMemberManagement}><Users size={18} /> メンバー管理</button>
-        <button id="goToCreateEventViewButton" onClick={handleCreateEvent}>イベント新規作成</button>
+        <div className="action-groups">
+          <div className="action-group modal-actions-group">
+            <button id="goToGroupSettingsButton" className="secondary-btn auto-width" onClick={handleGroupSettings}><Settings size={18} /> グループ設定</button>
+            <button id="goToPrizeMasterButton" className="secondary-btn auto-width" onClick={handlePrizeMaster}><Trophy size={18} /> 景品マスター管理</button>
+          </div>
+          <div className="action-group navigation-actions-group">
+            <button id="goToMemberManagementButton" onClick={handleMemberManagement}><Users size={18} /> メンバー管理</button>
+            <button id="goToCreateEventViewButton" className="primary-action" onClick={handleCreateEvent}>イベント新規作成</button>
+          </div>
+        </div>
       </div>
 
       <div className="list-header">
         <h3>このグループのイベント一覧</h3>
         <div className="input-group checkbox-group">
-          <input 
-            type="checkbox" 
-            id="showStartedEvents" 
+          <input
+            type="checkbox"
+            id="showStartedEvents"
             checked={showStartedEvents}
             onChange={(e) => {
               setShowStartedEvents(e.target.checked);
@@ -205,7 +211,7 @@ export const DashboardView: React.FC = () => {
       )}
 
       {showPrizeMasterModal && (
-        <PrizeMasterModal 
+        <PrizeMasterModal
           groupId={groupId!}
           onClose={() => setShowPrizeMasterModal(false)}
           setToastMessage={setToastMessage}
