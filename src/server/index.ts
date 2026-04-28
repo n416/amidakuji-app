@@ -26,8 +26,13 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Bindings, Variables: Variables }>();
 
+const ALLOWED_ORIGINS = [
+  'https://amidakuji-app.tobira-sys.workers.dev',
+  'http://localhost:3000',
+];
+
 app.use('*', cors({
-  origin: (origin) => origin || '*',
+  origin: (origin) => ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-auth-token', 'x-member-id'],
   credentials: true,
@@ -83,6 +88,15 @@ app.get('/api/emoji-map', (c) => {
   return c.json(emojiMap);
 });
 
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/'/g, '&#039;');
+}
+
 // SPAのフォールバックルーティング
 app.get('*', async (c) => {
   const originalPath = c.req.path;
@@ -123,16 +137,21 @@ app.get('*', async (c) => {
         
         let html = await response.text();
         
+        const safeTitle = escapeHtmlAttr(ogTitle);
+        const safeDesc = escapeHtmlAttr(ogDesc);
+        const safeImageUrl = escapeHtmlAttr(ogImageUrl);
+        const safePageUrl = escapeHtmlAttr(c.req.url);
+
         const ogTags = `
-    <meta property="og:title" content="${ogTitle}" />
-    <meta property="og:description" content="${ogDesc}" />
-    <meta property="og:image" content="${ogImageUrl}" />
-    <meta property="og:url" content="${c.req.url}" />
+    <meta property="og:title" content="${safeTitle}" />
+    <meta property="og:description" content="${safeDesc}" />
+    <meta property="og:image" content="${safeImageUrl}" />
+    <meta property="og:url" content="${safePageUrl}" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${ogTitle}" />
-    <meta name="twitter:description" content="${ogDesc}" />
-    <meta name="twitter:image" content="${ogImageUrl}" />`;
+    <meta name="twitter:title" content="${safeTitle}" />
+    <meta name="twitter:description" content="${safeDesc}" />
+    <meta name="twitter:image" content="${safeImageUrl}" />`;
         
         html = html.replace('</head>', `${ogTags}\n</head>`);
         
