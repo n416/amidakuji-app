@@ -91,8 +91,10 @@ export const BroadcastView: React.FC = () => {
     };
 
     window.addEventListener('resize', handleResize);
+    window.addEventListener('themeChanged', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('themeChanged', handleResize);
       clearTimeout(resizeDebounceTimer);
     };
   }, [loading, isFullscreen, eventData?.status, eventData?.participants, prepareStep, isRunning]);

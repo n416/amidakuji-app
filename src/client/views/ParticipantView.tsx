@@ -344,10 +344,12 @@ export const ParticipantView: React.FC = () => {
     };
 
     window.addEventListener('resize', handleResize);
+    window.addEventListener('themeChanged', handleResize);
 
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('themeChanged', handleResize);
       clearTimeout(resizeDebounceTimer);
     };
   }, [phase, eventData, myMemberId, showAllTracers, isRunning]); // showAllTracers の変更時も再描画

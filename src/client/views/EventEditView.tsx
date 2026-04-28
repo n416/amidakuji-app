@@ -129,7 +129,7 @@ export const EventEditView: React.FC = () => {
     }
 
     let resizeDebounceTimer: NodeJS.Timeout;
-    const handleResize = () => {
+    const handleResizeOrThemeChange = () => {
       clearTimeout(resizeDebounceTimer);
       resizeDebounceTimer = setTimeout(() => {
         if (!isNewEvent && draftEventData && canvasRef.current && canvasRef.current.offsetParent !== null) {
@@ -138,9 +138,11 @@ export const EventEditView: React.FC = () => {
       }, 350);
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResizeOrThemeChange);
+    window.addEventListener('themeChanged', handleResizeOrThemeChange);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', handleResizeOrThemeChange);
+      window.removeEventListener('themeChanged', handleResizeOrThemeChange);
       clearTimeout(resizeDebounceTimer);
     };
   }, [draftEventData, isNewEvent, prepareStep]);

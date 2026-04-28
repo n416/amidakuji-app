@@ -8,18 +8,26 @@ interface SettingsPanelProps {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ animation, setAnimation }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [theme, setTheme] = useState<'auto' | 'light' | 'dark'>('auto');
+  const [theme, setTheme] = useState<'auto' | 'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('userSettings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.theme) return parsed.theme;
+      } catch (e) {}
+    }
+    return 'auto';
+  });
   const panelRef = useRef<HTMLDivElement>(null);
   const fabRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load settings from localStorage
+    // Load animation setting from localStorage
     const saved = localStorage.getItem('userSettings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.animation !== undefined) setAnimation(parsed.animation);
-        if (parsed.theme) setTheme(parsed.theme);
       } catch (e) {}
     }
   }, [setAnimation]);
@@ -40,6 +48,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ animation, setAnim
         document.body.classList.add('light-mode');
       }
     }
+    
+    // Dispatch a custom event so other components (like canvas renderers) know the theme changed
+    window.dispatchEvent(new Event('themeChanged'));
   }, [animation, theme]);
 
   useEffect(() => {
@@ -86,10 +97,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ animation, setAnim
             <span className="slider round"></span>
           </label>
         </div>
-        <div className="setting-item">
+        <div className="setting-item theme-switcher">
           <span>テーマ</span>
-          <div className="theme-options">
-            <label>
+          <div className="theme-options segmented-control">
+            <label className={theme === 'auto' ? 'active' : ''}>
               <input 
                 type="radio" 
                 name="theme" 
@@ -98,7 +109,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ animation, setAnim
                 onChange={() => setTheme('auto')}
               /> 自動
             </label>
-            <label>
+            <label className={theme === 'light' ? 'active' : ''}>
               <input 
                 type="radio" 
                 name="theme" 
@@ -107,7 +118,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ animation, setAnim
                 onChange={() => setTheme('light')}
               /> ライト
             </label>
-            <label>
+            <label className={theme === 'dark' ? 'active' : ''}>
               <input 
                 type="radio" 
                 name="theme" 
