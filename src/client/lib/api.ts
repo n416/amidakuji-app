@@ -88,7 +88,7 @@ export const setPassword = (memberId: string, password: string, groupId: string,
 export const getPrizeMasters = (groupId: string): Promise<any> => request(`/api/groups/${groupId}/prize-masters`);
 export const generatePrizeMasterUploadUrl = (groupId: string, fileType: string, fileHash: string): Promise<any> => request(`/api/groups/${groupId}/prize-masters/generate-upload-url`, 'POST', {fileType, fileHash});
 export const addPrizeMaster = (groupId: string, name: string, imageUrl: string, rank: string): Promise<any> => request(`/api/groups/${groupId}/prize-masters`, 'POST', {name, imageUrl, rank});
-export const deletePrizeMaster = (masterId: string, groupId: string): Promise<any> => request(`/api/prize-masters/${masterId}`, 'DELETE', {groupId});
+export const deletePrizeMaster = (masterId: string, groupId: string): Promise<any> => request(`/api/groups/${groupId}/prize-masters/${masterId}`, 'DELETE');
 export const requestAdminAccess = (): Promise<any> => request('/api/admin/request', 'POST');
 export const getAdminRequests = (): Promise<any> => request('/api/admin/requests');
 export const approveAdminRequest = (requestId: string): Promise<any> => request('/api/admin/approve', 'POST', {requestId});

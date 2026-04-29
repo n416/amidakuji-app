@@ -358,10 +358,10 @@ groups.post('/groups/:groupId/prize-masters/generate-upload-url', requireAuth, a
   }
 });
 
-groups.delete('/prize-masters/:masterId', requireAuth, async (c) => {
+groups.delete('/groups/:groupId/prize-masters/:masterId', requireAuth, async (c) => {
   try {
+    const groupId = c.req.param('groupId');
     const masterId = c.req.param('masterId');
-    const { groupId } = await c.req.json();
     const user = c.get('user');
 
     if (!groupId) return c.json({ error: 'groupId is required' }, 400);
