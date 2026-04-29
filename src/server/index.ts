@@ -42,6 +42,9 @@ app.use('*', cors({
   credentials: true,
 }));
 
+// 認証状態の復元ミドルウェアを適用
+app.use('*', authMiddleware);
+
 // ヘルスチェック
 app.get('/_ah/warmup', (c) => {
   return c.text('OK');
