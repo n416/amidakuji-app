@@ -59,8 +59,11 @@ storageRouter.get('/public-images/*', async (c) => {
       return c.text('R2 binding missing', 500);
     }
 
-    let fileName = c.req.path.replace(/^\/api\/public-images\//, '');
-    fileName = decodeURIComponent(fileName);
+    const param = c.req.param('*');
+    if (!param) {
+      return c.text('Missing filename', 400);
+    }
+    let fileName = decodeURIComponent(param);
     
     const object = await c.env.BUCKET.get(fileName);
     if (!object) {
